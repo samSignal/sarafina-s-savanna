@@ -76,8 +76,12 @@ export const Header = () => {
         <div className="flex items-center justify-between gap-4">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-accent-gradient rounded-full flex items-center justify-center shadow-medium">
-              <span className="text-accent-foreground font-display font-bold text-xl">S</span>
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-accent-gradient flex items-center justify-center shadow-medium">
+              <img
+                src="/images/department%20logo/sarafina%20logo.jpeg"
+                alt="Sarafina Market logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <span className="font-display text-3xl md:text-4xl font-bold text-primary">
               Sarafina<span className="text-secondary">Market</span>

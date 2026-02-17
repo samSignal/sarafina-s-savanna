@@ -104,11 +104,11 @@ const Category = () => {
                 </p>
               </div>
               {department.image && (
-                <div className="w-full md:w-1/3 aspect-video md:aspect-square rounded-xl overflow-hidden shadow-lg">
+                <div className="w-full md:w-1/3 max-w-sm rounded-xl overflow-hidden shadow-lg bg-white border flex items-center justify-center">
                   <img 
                     src={department.image} 
                     alt={department.name}
-                    className="w-full h-full object-cover"
+                    className="max-h-64 w-full object-contain"
                   />
                 </div>
               )}

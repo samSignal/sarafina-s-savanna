@@ -35,7 +35,15 @@ class DepartmentController extends Controller
             'description' => 'nullable|string',
             'status' => 'required|in:Active,Inactive',
             'image' => 'nullable|string',
+            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
         ]);
+
+        if ($request->hasFile('image_file')) {
+            $path = $request->file('image_file')->store('departments', 'public');
+            $validated['image'] = '/storage/' . $path;
+        }
+
+        unset($validated['image_file']);
 
         $department = Department::create($validated);
 
@@ -49,7 +57,15 @@ class DepartmentController extends Controller
             'description' => 'nullable|string',
             'status' => 'required|in:Active,Inactive',
             'image' => 'nullable|string',
+            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
         ]);
+
+        if ($request->hasFile('image_file')) {
+            $path = $request->file('image_file')->store('departments', 'public');
+            $validated['image'] = '/storage/' . $path;
+        }
+
+        unset($validated['image_file']);
 
         $department->update($validated);
 

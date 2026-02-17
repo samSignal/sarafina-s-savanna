@@ -12,11 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 
 export default function Departments() {
-    const [departments, setDepartments] = useState([]);
+    const [departments, setDepartments] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentDept, setCurrentDept] = useState({ id: null, name: "", description: "", status: "Active", image: "" });
+    const [currentDept, setCurrentDept] = useState<{ id: number | null; name: string; description: string; status: string; image: string }>({ id: null, name: "", description: "", status: "Active", image: "" });
+    const [imageFile, setImageFile] = useState<File | null>(null);
 
     useEffect(() => {
         fetchDepartments();
@@ -41,7 +42,7 @@ export default function Departments() {
         (dept.description && dept.description.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
-    const handleOpenDialog = (dept = null) => {
+    const handleOpenDialog = (dept: any = null) => {
         if (dept) {
             setIsEditing(true);
             setCurrentDept({ 
@@ -52,6 +53,7 @@ export default function Departments() {
             setIsEditing(false);
             setCurrentDept({ id: null, name: "", description: "", status: "Active", image: "" });
         }
+        setImageFile(null);
         setIsDialogOpen(true);
     };
 
@@ -62,11 +64,22 @@ export default function Departments() {
         }
 
         try {
-            if (isEditing) {
+            const formData = new FormData();
+            formData.append("name", currentDept.name);
+            formData.append("description", currentDept.description || "");
+            formData.append("status", currentDept.status);
+            if (currentDept.image) {
+                formData.append("image", currentDept.image);
+            }
+            if (imageFile) {
+                formData.append("image_file", imageFile);
+            }
+
+            if (isEditing && currentDept.id !== null) {
+                formData.append("_method", "PUT");
                 const response = await fetch(`/api/departments/${currentDept.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(currentDept)
+                    method: 'POST',
+                    body: formData
                 });
                 
                 if (response.ok) {
@@ -77,8 +90,7 @@ export default function Departments() {
             } else {
                 const response = await fetch('/api/departments', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(currentDept)
+                    body: formData
                 });
 
                 if (response.ok) {
@@ -169,9 +181,19 @@ export default function Departments() {
                                 <Label htmlFor="image">Image URL</Label>
                                 <Input 
                                     id="image" 
-                                    placeholder="/images/departments/example.jpg" 
+                                    placeholder="/images/departments/example.jpg or leave blank when uploading" 
                                     value={currentDept.image}
                                     onChange={(e) => setCurrentDept({...currentDept, image: e.target.value})}
+                                />
+                                <Label htmlFor="image_file">Upload Image</Label>
+                                <Input
+                                    id="image_file"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0] || null;
+                                        setImageFile(file);
+                                    }}
                                 />
                             </div>
                         </div>
@@ -226,8 +248,8 @@ export default function Departments() {
                                 <TableRow key={dept.id}>
                                     <TableCell className="font-medium flex items-center gap-2">
                                         {dept.image ? (
-                                            <div className="h-8 w-8 rounded overflow-hidden">
-                                                <img src={dept.image} alt={dept.name} className="h-full w-full object-cover" />
+                                            <div className="h-10 w-10 rounded overflow-hidden bg-white border flex items-center justify-center">
+                                                <img src={dept.image} alt={dept.name} className="max-h-full max-w-full object-contain" />
                                             </div>
                                         ) : (
                                             <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center text-primary">
