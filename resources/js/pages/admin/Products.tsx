@@ -22,6 +22,7 @@ export default function Products() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [imageFile, setImageFile] = useState<File | null>(null);
     
     const [currentProduct, setCurrentProduct] = useState({
         id: null,
@@ -97,6 +98,7 @@ export default function Products() {
                 price: prod.price.toString(),
                 stock: prod.stock.toString()
             });
+            setImageFile(null);
         } else {
             setIsEditing(false);
             setCurrentProduct({
@@ -110,6 +112,7 @@ export default function Products() {
                 status: "In Stock",
                 image: ""
             });
+            setImageFile(null);
         }
         setIsDialogOpen(true);
     };
@@ -121,16 +124,32 @@ export default function Products() {
         }
 
         try {
-            const payload = {
-                ...currentProduct,
-                category_id: currentProduct.category_id || null // Ensure empty string becomes null
-            };
+            const formData = new FormData();
+            formData.append("department_id", currentProduct.department_id);
+            if (currentProduct.category_id) {
+                formData.append("category_id", currentProduct.category_id);
+            }
+            formData.append("name", currentProduct.name);
+            if (currentProduct.description) {
+                formData.append("description", currentProduct.description);
+            }
+            formData.append("price", currentProduct.price);
+            formData.append("stock", currentProduct.stock || "0");
+            formData.append("status", currentProduct.status);
+            if (currentProduct.image) {
+                formData.append("image", currentProduct.image);
+            }
+            if (imageFile) {
+                formData.append("image_file", imageFile);
+            }
 
             if (isEditing) {
                 const response = await fetch(`/api/products/${currentProduct.id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    method: 'POST',
+                    headers: {
+                        "X-HTTP-Method-Override": "PUT",
+                    },
+                    body: formData,
                 });
                 
                 if (response.ok) {
@@ -141,8 +160,7 @@ export default function Products() {
             } else {
                 const response = await fetch('/api/products', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: formData,
                 });
 
                 if (response.ok) {
@@ -295,6 +313,19 @@ export default function Products() {
                                         <SelectItem value="Out of Stock">Out of Stock</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="image">Product Image</Label>
+                                <Input
+                                    id="image"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0] || null;
+                                        setImageFile(file);
+                                    }}
+                                />
                             </div>
                         </div>
                         <DialogFooter>

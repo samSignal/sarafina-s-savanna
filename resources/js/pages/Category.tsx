@@ -33,12 +33,13 @@ const Category = () => {
   const categoryFilter = searchParams.get("category");
   const [department, setDepartment] = useState<Department | null>(null);
   const [loading, setLoading] = useState(true);
+  const [quantities, setQuantities] = useState<Record<number, number>>({});
   const { addItem } = useCart();
 
   useEffect(() => {
     const fetchDepartment = async () => {
       try {
-        const response = await fetch(`/api/departments/${id}`);
+        const response = await fetch(`/api/public/departments/${id}`);
         if (!response.ok) throw new Error("Failed to load department");
         const data = await response.json();
         setDepartment(data);
@@ -116,7 +117,6 @@ const Category = () => {
           </div>
         </div>
 
-        {/* Products Grid */}
         <div className="container py-12">
           {department.products && department.products.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -143,37 +143,99 @@ const Category = () => {
                         No Image
                       </div>
                     )}
-                    {product.stock <= 0 && (
+                    {product.status === "Out of Stock" ? (
                       <div className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 rounded">
                         Out of Stock
                       </div>
-                    )}
+                    ) : product.status === "Low Stock" ? (
+                      <div className="absolute top-2 right-2 bg-yellow-100 text-yellow-900 text-xs font-bold px-2 py-1 rounded border border-yellow-300">
+                        Low Stock
+                      </div>
+                    ) : null}
                   </div>
                   <div className="p-4 flex-1 flex flex-col">
                     <h3 className="font-semibold text-lg mb-1 line-clamp-1">{product.name}</h3>
                     <p className="text-muted-foreground text-sm mb-4 line-clamp-2 flex-1">
                       {product.description}
                     </p>
-                    <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center justify-between mt-auto gap-2">
                       <span className="font-bold text-lg">
                         R{Number(product.price).toFixed(2)}
                       </span>
-                      <Button
-                        size="sm"
-                        disabled={product.stock <= 0}
-                        onClick={() => {
-                          addItem({
-                            id: product.id,
-                            name: product.name,
-                            price: Number(product.price),
-                            image: product.image,
-                          });
-                          toast.success(`${product.name} added to cart`);
-                        }}
-                      >
-                        <ShoppingCart className="w-4 h-4 mr-2" />
-                        Add
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center border rounded-md">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            disabled={product.status === "Out of Stock"}
+                            onClick={() => {
+                              setQuantities((current) => {
+                                const currentQty = current[product.id] ?? 1;
+                                const nextQty = currentQty - 1;
+
+                                if (nextQty < 1) {
+                                  return current;
+                                }
+
+                                return { ...current, [product.id]: nextQty };
+                              });
+                            }}
+                          >
+                            -
+                          </Button>
+                          <span className="px-2 text-sm min-w-[2rem] text-center">
+                            {quantities[product.id] ?? 1}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            disabled={product.status === "Out of Stock"}
+                            onClick={() => {
+                              setQuantities((current) => {
+                                const currentQty = current[product.id] ?? 1;
+                                const nextQty = currentQty + 1;
+
+                                if (product.stock > 0 && nextQty > product.stock) {
+                                  toast.error(`Only ${product.stock} in stock for ${product.name}`);
+                                  return current;
+                                }
+
+                                return { ...current, [product.id]: nextQty };
+                              });
+                            }}
+                          >
+                            +
+                          </Button>
+                        </div>
+                        <Button
+                          size="sm"
+                          disabled={product.status === "Out of Stock"}
+                          onClick={() => {
+                            const qty = quantities[product.id] ?? 1;
+                            if (product.stock > 0 && qty > product.stock) {
+                              toast.error(`Only ${product.stock} in stock for ${product.name}`);
+                              return;
+                            }
+                            addItem(
+                              {
+                                id: product.id,
+                                name: product.name,
+                                price: Number(product.price),
+                                image: product.image,
+                              },
+                              qty
+                            );
+                            toast.success(`${product.name} added to cart`);
+                          }}
+                        >
+                          <ShoppingCart className="w-4 h-4 mr-2" />
+                          Add
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>

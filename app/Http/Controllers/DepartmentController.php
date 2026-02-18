@@ -19,6 +19,24 @@ class DepartmentController extends Controller
             ->get();
     }
 
+    public function publicShow(Department $department)
+    {
+        if ($department->status !== 'Active') {
+            abort(404);
+        }
+
+        $department->load(['products' => function ($query) {
+            $query->where(function ($q) {
+                $q->whereNull('category_id')
+                    ->orWhereHas('category', function ($categoryQuery) {
+                        $categoryQuery->where('status', 'Active');
+                    });
+            });
+        }]);
+
+        return $department;
+    }
+
     public function show(Department $department)
     {
         if ($department->status !== 'Active') {

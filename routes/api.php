@@ -21,7 +21,9 @@ Route::post('auth/login', [AuthController::class, 'login']);
 Route::post('auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
 Route::get('public/departments', [DepartmentController::class, 'publicIndex']);
+Route::get('public/departments/{department}', [DepartmentController::class, 'publicShow']);
 Route::get('public/categories', [CategoryController::class, 'publicIndex']);
+Route::get('public/products', [ProductController::class, 'publicIndex']);
 Route::apiResource('departments', DepartmentController::class);
 Route::apiResource('categories', CategoryController::class);
 Route::apiResource('products', ProductController::class);

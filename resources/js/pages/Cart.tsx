@@ -1,20 +1,90 @@
+import { useEffect, useMemo, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
+interface LiveProduct {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+  stock: number;
+  status: string;
+}
+
 const Cart = () => {
-  const { items, totalItems, totalPrice, removeItem, clearCart } = useCart();
+  const { items, totalItems, totalPrice, updateItem, removeItem, clearCart } = useCart();
   const { token, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const [liveProducts, setLiveProducts] = useState<LiveProduct[]>([]);
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    const syncCart = async () => {
+      if (!items.length) {
+        setLiveProducts([]);
+        return;
+      }
+
+      setSyncing(true);
+      try {
+        const response = await fetch("/api/public/products");
+        if (!response.ok) {
+          return;
+        }
+        const data: LiveProduct[] = await response.json();
+        setLiveProducts(data);
+
+        data.forEach((product) => {
+          const inCart = items.find((item) => item.id === product.id);
+          if (inCart) {
+            if (inCart.price !== Number(product.price) || inCart.name !== product.name || inCart.image !== product.image) {
+              updateItem(product.id, {
+                price: Number(product.price),
+                name: product.name,
+                image: product.image,
+              });
+            }
+          }
+        });
+      } finally {
+        setSyncing(false);
+      }
+    };
+
+    syncCart();
+  }, [items, updateItem]);
+
+  const liveMap = useMemo(() => {
+    const map = new Map<number, LiveProduct>();
+    liveProducts.forEach((p) => map.set(p.id, p));
+    return map;
+  }, [liveProducts]);
+
+  const hasUnavailableItems = useMemo(
+    () =>
+      items.some((item) => {
+        const live = liveMap.get(item.id);
+        if (!live) return true;
+        return live.status === "Out of Stock";
+      }),
+    [items, liveMap]
+  );
 
   const handleCheckout = async () => {
     if (!totalItems) {
       toast.error("Your cart is empty");
+      return;
+    }
+
+    if (hasUnavailableItems) {
+      toast.error("Some items in your cart are no longer available");
       return;
     }
 
@@ -89,44 +159,112 @@ const Cart = () => {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
-              {items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-4 bg-card border rounded-lg p-4"
-                >
-                  <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                    {item.image ? (
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                        No image
+              {items.map((item) => {
+                const live = liveMap.get(item.id);
+                const isMissing = !live;
+                const isOutOfStock = live?.status === "Out of Stock";
+                const isLowStock = live?.status === "Low Stock";
+                const displayPrice = live ? Number(live.price) : item.price;
+
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-4 bg-card border rounded-lg p-4"
+                  >
+                    <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                      {(live?.image || item.image) ? (
+                        <img
+                          src={live?.image || item.image}
+                          alt={live?.name || item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                          No image
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium flex items-center gap-2">
+                        <span>{live?.name || item.name}</span>
+                        {isOutOfStock && (
+                          <Badge variant="destructive" className="text-[10px]">
+                            Out of Stock
+                          </Badge>
+                        )}
+                        {isLowStock && !isOutOfStock && (
+                          <Badge className="bg-yellow-100 text-yellow-900 border-yellow-300 text-[10px]">
+                            Low Stock
+                          </Badge>
+                        )}
+                        {isMissing && (
+                          <Badge variant="destructive" className="text-[10px]">
+                            Unavailable
+                          </Badge>
+                        )}
+                      </p>
+                      <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>Quantity:</span>
+                        <div className="flex items-center border rounded-md">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => {
+                              const nextQty = item.quantity - 1;
+                              if (nextQty <= 0) {
+                                removeItem(item.id);
+                                return;
+                              }
+                              updateItem(item.id, { quantity: nextQty });
+                            }}
+                          >
+                            -
+                          </Button>
+                          <span className="px-2 text-xs min-w-[2rem] text-center">
+                            {item.quantity}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            disabled={isOutOfStock || isMissing}
+                            onClick={() => {
+                              const nextQty = item.quantity + 1;
+                              if (live && live.stock > 0 && nextQty > live.stock) {
+                                toast.error(`Only ${live.stock} in stock for ${live.name}`);
+                                return;
+                              }
+                              updateItem(item.id, { quantity: nextQty });
+                            }}
+                          >
+                            +
+                          </Button>
+                        </div>
                       </div>
-                    )}
+                      {live && displayPrice !== item.price && (
+                        <p className="text-xs text-muted-foreground">
+                          Price updated to R{displayPrice.toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right space-y-2">
+                      <p className="font-semibold">
+                        R{(displayPrice * item.quantity).toFixed(2)}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeItem(item.id)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{item.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Quantity: {item.quantity}
-                    </p>
-                  </div>
-                  <div className="text-right space-y-2">
-                    <p className="font-semibold">
-                      R{(item.price * item.quantity).toFixed(2)}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeItem(item.id)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="bg-card border rounded-lg p-6 h-fit space-y-3">
@@ -139,7 +277,16 @@ const Cart = () => {
                 <span>Total</span>
                 <span>R{totalPrice.toFixed(2)}</span>
               </div>
-              <Button className="w-full mt-4" onClick={handleCheckout}>
+              {hasUnavailableItems && (
+                <p className="text-xs text-destructive">
+                  Some items are unavailable or out of stock. Please update your cart.
+                </p>
+              )}
+              <Button
+                className="w-full mt-4"
+                onClick={handleCheckout}
+                disabled={hasUnavailableItems || syncing}
+              >
                 Proceed to checkout
               </Button>
               <Button

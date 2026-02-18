@@ -12,6 +12,22 @@ class ProductController extends Controller
         return Product::with(['department', 'category'])->latest()->get();
     }
 
+    public function publicIndex()
+    {
+        return Product::with(['department', 'category'])
+            ->whereHas('department', function ($query) {
+                $query->where('status', 'Active');
+            })
+            ->where(function ($query) {
+                $query->whereNull('category_id')
+                    ->orWhereHas('category', function ($categoryQuery) {
+                        $categoryQuery->where('status', 'Active');
+                    });
+            })
+            ->latest()
+            ->get();
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -22,7 +38,16 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'status' => 'required|in:In Stock,Low Stock,Out of Stock',
+            'image' => 'nullable|string',
+            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
         ]);
+
+        if ($request->hasFile('image_file')) {
+            $path = $request->file('image_file')->store('products', 'public');
+            $validated['image'] = '/storage/' . $path;
+        }
+
+        unset($validated['image_file']);
 
         $product = Product::create($validated);
 
@@ -39,7 +64,16 @@ class ProductController extends Controller
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'status' => 'required|in:In Stock,Low Stock,Out of Stock',
+            'image' => 'nullable|string',
+            'image_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
         ]);
+
+        if ($request->hasFile('image_file')) {
+            $path = $request->file('image_file')->store('products', 'public');
+            $validated['image'] = '/storage/' . $path;
+        }
+
+        unset($validated['image_file']);
 
         $product->update($validated);
 
@@ -64,7 +98,7 @@ class ProductController extends Controller
         
         if ($stock === 0) {
             $status = 'Out of Stock';
-        } elseif ($stock < 10) {
+        } elseif ($stock < 5) {
             $status = 'Low Stock';
         }
 

@@ -20,12 +20,13 @@ interface Product {
 const Shop = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [quantities, setQuantities] = useState<Record<number, number>>({});
   const { addItem } = useCart();
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('/api/products');
+        const response = await fetch('/api/public/products');
         if (!response.ok) throw new Error("Failed to load products");
         const data = await response.json();
         setProducts(data);
@@ -39,6 +40,28 @@ const Shop = () => {
 
     fetchProducts();
   }, []);
+
+  const getQuantity = (productId: number) => {
+    return quantities[productId] ?? 1;
+  };
+
+  const changeQuantity = (product: Product, delta: number) => {
+    setQuantities((current) => {
+      const currentQty = current[product.id] ?? 1;
+      const nextQty = currentQty + delta;
+
+      if (nextQty < 1) {
+        return current;
+      }
+
+      if (product.stock > 0 && nextQty > product.stock) {
+        toast.error(`Only ${product.stock} in stock for ${product.name}`);
+        return current;
+      }
+
+      return { ...current, [product.id]: nextQty };
+    });
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -81,37 +104,76 @@ const Shop = () => {
                         No Image
                       </div>
                     )}
-                    {product.stock <= 0 && (
+                    {product.status === "Out of Stock" ? (
                       <div className="absolute top-2 right-2 bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1 rounded">
                         Out of Stock
                       </div>
-                    )}
+                    ) : product.status === "Low Stock" ? (
+                      <div className="absolute top-2 right-2 bg-yellow-100 text-yellow-900 text-xs font-bold px-2 py-1 rounded border border-yellow-300">
+                        Low Stock
+                      </div>
+                    ) : null}
                   </div>
                   <div className="p-4 flex-1 flex flex-col">
                     <h3 className="font-semibold text-lg mb-1 line-clamp-1">{product.name}</h3>
                     <p className="text-muted-foreground text-sm mb-4 line-clamp-2 flex-1">
                       {product.description}
                     </p>
-                    <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center justify-between mt-auto gap-2">
                       <span className="font-bold text-lg">
                         R{Number(product.price).toFixed(2)}
                       </span>
-                      <Button
-                        size="sm"
-                        disabled={product.stock <= 0}
-                        onClick={() => {
-                          addItem({
-                            id: product.id,
-                            name: product.name,
-                            price: Number(product.price),
-                            image: product.image,
-                          });
-                          toast.success(`${product.name} added to cart`);
-                        }}
-                      >
-                        <ShoppingCart className="w-4 h-4 mr-2" />
-                        Add
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center border rounded-md">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            disabled={product.status === "Out of Stock"}
+                            onClick={() => changeQuantity(product, -1)}
+                          >
+                            -
+                          </Button>
+                          <span className="px-2 text-sm min-w-[2rem] text-center">
+                            {getQuantity(product.id)}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            disabled={product.status === "Out of Stock"}
+                            onClick={() => changeQuantity(product, 1)}
+                          >
+                            +
+                          </Button>
+                        </div>
+                        <Button
+                          size="sm"
+                          disabled={product.status === "Out of Stock"}
+                          onClick={() => {
+                            const qty = getQuantity(product.id);
+                            if (product.stock > 0 && qty > product.stock) {
+                              toast.error(`Only ${product.stock} in stock for ${product.name}`);
+                              return;
+                            }
+                            addItem(
+                              {
+                                id: product.id,
+                                name: product.name,
+                                price: Number(product.price),
+                                image: product.image,
+                              },
+                              qty
+                            );
+                            toast.success(`${product.name} added to cart`);
+                          }}
+                        >
+                          <ShoppingCart className="w-4 h-4 mr-2" />
+                          Add
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
