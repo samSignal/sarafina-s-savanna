@@ -37,6 +37,7 @@ interface Order {
   status: string;
   payment_status: string;
   total: number;
+  currency: string;
   created_at: string;
 }
 
@@ -147,6 +148,18 @@ const Account = () => {
       dateStyle: "medium",
       timeStyle: "short",
     });
+
+  const currencySymbol = (code: string) => {
+    const upper = code?.toUpperCase() || "GBP";
+    if (upper === "GBP") return "£";
+    if (upper === "USD") return "$";
+    if (upper === "EUR") return "€";
+    if (upper === "ZAR") return "R";
+    if (upper === "NGN") return "₦";
+    if (upper === "AUD") return "$";
+    if (upper === "CAD") return "$";
+    return upper + " ";
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -418,7 +431,10 @@ const Account = () => {
                                   </Badge>
                                 </TableCell>
                                 <TableCell>{order.payment_status}</TableCell>
-                                <TableCell>R {order.total.toFixed(2)}</TableCell>
+                                <TableCell>
+                                  {currencySymbol(order.currency)}
+                                  {order.total.toFixed(2)}
+                                </TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -587,4 +603,3 @@ const Account = () => {
 };
 
 export default Account;
-

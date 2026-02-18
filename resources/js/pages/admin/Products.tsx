@@ -12,6 +12,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
 
+const STRIPE_FEE_CONFIG = {
+    uk_eu: {
+        percent: 0.014,
+        fixed: 0.2,
+    },
+    international: {
+        percent: 0.029,
+        fixed: 0.2,
+    },
+} as const;
+
+function calculatePriceWithStripeFees(net: number, percentFee: number, fixedFee: number): number {
+    if (!Number.isFinite(net) || net <= 0) {
+        return 0;
+    }
+
+    const denominator = 1 - percentFee;
+    if (denominator <= 0) {
+        return net;
+    }
+
+    return (net + fixedFee) / denominator;
+}
+
 export default function Products() {
     const [searchParams] = useSearchParams();
     const initialDeptId = searchParams.get("department_id");
@@ -23,14 +47,18 @@ export default function Products() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [imageFile, setImageFile] = useState<File | null>(null);
+    const [desiredNetPrice, setDesiredNetPrice] = useState("");
     
     const [currentProduct, setCurrentProduct] = useState({
-        id: null,
+        id: null as number | null,
         department_id: initialDeptId || "",
         category_id: "",
         name: "",
         description: "",
         price: "",
+        desired_net_price: "",
+        price_uk_eu: "",
+        price_international: "",
         stock: "",
         status: "In Stock",
         image: ""
@@ -88,7 +116,7 @@ export default function Products() {
         !currentProduct.department_id || cat.department_id.toString() === currentProduct.department_id.toString()
     );
 
-    const handleOpenDialog = (prod = null) => {
+    const handleOpenDialog = (prod: any = null) => {
         if (prod) {
             setIsEditing(true);
             setCurrentProduct({
@@ -96,9 +124,13 @@ export default function Products() {
                 department_id: prod.department_id?.toString() || "",
                 category_id: prod.category_id?.toString() || "",
                 price: prod.price.toString(),
+                desired_net_price: prod.desired_net_price ? prod.desired_net_price.toString() : "",
+                price_uk_eu: prod.price_uk_eu ? prod.price_uk_eu.toString() : "",
+                price_international: prod.price_international ? prod.price_international.toString() : "",
                 stock: prod.stock.toString()
             });
             setImageFile(null);
+            setDesiredNetPrice(prod.desired_net_price ? prod.desired_net_price.toString() : "");
         } else {
             setIsEditing(false);
             setCurrentProduct({
@@ -108,13 +140,40 @@ export default function Products() {
                 name: "",
                 description: "",
                 price: "",
+                desired_net_price: "",
+                price_uk_eu: "",
+                price_international: "",
                 stock: "",
                 status: "In Stock",
                 image: ""
             });
             setImageFile(null);
+            setDesiredNetPrice("");
         }
         setIsDialogOpen(true);
+    };
+
+    const handleDesiredNetPriceChange = (value: string) => {
+        setDesiredNetPrice(value);
+        const net = parseFloat(value);
+
+        if (Number.isNaN(net) || net <= 0) {
+            return;
+        }
+
+        const { percent: percentUkEu, fixed: fixedUkEu } = STRIPE_FEE_CONFIG.uk_eu;
+        const { percent: percentIntl, fixed: fixedIntl } = STRIPE_FEE_CONFIG.international;
+
+        const grossUkEu = calculatePriceWithStripeFees(net, percentUkEu, fixedUkEu);
+        const grossIntl = calculatePriceWithStripeFees(net, percentIntl, fixedIntl);
+
+        setCurrentProduct((prev) => ({
+            ...prev,
+            price: grossUkEu.toFixed(2),
+            desired_net_price: net.toFixed(2),
+            price_uk_eu: grossUkEu.toFixed(2),
+            price_international: grossIntl.toFixed(2),
+        }));
     };
 
     const handleSaveProduct = async () => {
@@ -133,7 +192,18 @@ export default function Products() {
             if (currentProduct.description) {
                 formData.append("description", currentProduct.description);
             }
-            formData.append("price", currentProduct.price);
+
+            const priceValue = currentProduct.price || "0";
+            const desiredNetValue = desiredNetPrice || currentProduct.desired_net_price || "";
+            const priceUkEuValue = currentProduct.price_uk_eu || priceValue;
+            const priceInternationalValue = currentProduct.price_international || priceValue;
+
+            formData.append("price", priceValue);
+            if (desiredNetValue) {
+                formData.append("desired_net_price", desiredNetValue);
+            }
+            formData.append("price_uk_eu", priceUkEuValue);
+            formData.append("price_international", priceInternationalValue);
             formData.append("stock", currentProduct.stock || "0");
             formData.append("status", currentProduct.status);
             if (currentProduct.image) {
@@ -276,21 +346,69 @@ export default function Products() {
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
-                                    <Label htmlFor="price">Price ($) *</Label>
-                                    <Input 
-                                        id="price" 
-                                        type="number"
-                                        placeholder="0.00" 
-                                        value={currentProduct.price}
-                                        onChange={(e) => setCurrentProduct({...currentProduct, price: e.target.value})}
-                                    />
+                                <div className="rounded-lg border bg-muted/40 p-3 sm:p-4 space-y-3">
+                                    <div className="flex flex-col gap-1">
+                                        <Label htmlFor="desiredPrice">Smart pricing</Label>
+                                        <span className="text-[11px] text-muted-foreground">
+                                            Enter what you want to receive; we add Stripe fees on top.
+                                        </span>
+                                    </div>
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="desiredPrice" className="text-xs text-muted-foreground">
+                                            Amount you want to receive (after Stripe fees)
+                                        </Label>
+                                        <Input
+                                            id="desiredPrice"
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            placeholder="Enter net amount, e.g. 10.00"
+                                            value={desiredNetPrice}
+                                            onChange={(e) => handleDesiredNetPriceChange(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="priceUkEu" className="text-xs text-muted-foreground">
+                                            Price for UK / EU cards (1.4% + £0.20)
+                                        </Label>
+                                        <Input 
+                                            id="priceUkEu" 
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            placeholder="Auto-calculated from desired amount"
+                                            value={currentProduct.price_uk_eu || currentProduct.price}
+                                            readOnly
+                                        />
+                                    </div>
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="priceInternational" className="text-xs text-muted-foreground">
+                                            Price for international cards (2.9% + £0.20)
+                                        </Label>
+                                        <Input 
+                                            id="priceInternational" 
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            placeholder="Auto-calculated from desired amount"
+                                            value={currentProduct.price_international}
+                                            readOnly
+                                        />
+                                    </div>
+                                    {desiredNetPrice && (currentProduct.price_uk_eu || currentProduct.price) && currentProduct.price_international && (
+                                        <span className="text-[11px] text-muted-foreground">
+                                            UK / EU customer pays <span className="font-medium">£{Number(currentProduct.price_uk_eu || currentProduct.price || 0).toFixed(2)}</span>{" "}
+                                            and international customer pays <span className="font-medium">£{Number(currentProduct.price_international || 0).toFixed(2)}</span>{" "}
+                                            so you receive about <span className="font-medium">£{Number(desiredNetPrice || 0).toFixed(2)}</span> after Stripe fees.
+                                        </span>
+                                    )}
                                 </div>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="stock">Stock Quantity</Label>
+                                <div className="rounded-lg border bg-muted/40 p-3 sm:p-4 space-y-2">
+                                    <Label htmlFor="stock">Stock quantity</Label>
                                     <Input 
                                         id="stock" 
                                         type="number"
+                                        min="0"
                                         placeholder="0" 
                                         value={currentProduct.stock}
                                         onChange={(e) => setCurrentProduct({...currentProduct, stock: e.target.value})}
@@ -380,8 +498,16 @@ export default function Products() {
                             filteredProducts.map((product) => (
                                 <TableRow key={product.id}>
                                     <TableCell>
-                                        <div className="h-10 w-10 rounded-md bg-slate-100 border flex items-center justify-center">
-                                            <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                        <div className="h-10 w-10 rounded-md bg-slate-100 border overflow-hidden flex items-center justify-center">
+                                            {product.image ? (
+                                                <img
+                                                    src={product.image}
+                                                    alt={product.name}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            ) : (
+                                                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                            )}
                                         </div>
                                     </TableCell>
                                     <TableCell className="font-medium">
@@ -396,7 +522,7 @@ export default function Products() {
                                             {product.status}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>${Number(product.price).toFixed(2)}</TableCell>
+                                    <TableCell>£{Number(product.price).toFixed(2)}</TableCell>
                                     <TableCell>{product.stock}</TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>

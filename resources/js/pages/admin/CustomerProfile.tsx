@@ -36,6 +36,7 @@ interface Order {
   status: string;
   payment_status: string;
   total: number;
+  currency: string;
   created_at: string;
 }
 
@@ -87,6 +88,24 @@ export default function CustomerProfile() {
   const [data, setData] = useState<CustomerProfileResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const formatDate = (value: string) =>
+    new Date(value).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+
+  const currencySymbol = (code: string) => {
+    const upper = code?.toUpperCase() || "GBP";
+    if (upper === "GBP") return "£";
+    if (upper === "USD") return "$";
+    if (upper === "EUR") return "€";
+    if (upper === "ZAR") return "R";
+    if (upper === "NGN") return "₦";
+    if (upper === "AUD") return "$";
+    if (upper === "CAD") return "$";
+    return upper + " ";
+  };
 
   useEffect(() => {
     if (!id) {
@@ -435,9 +454,7 @@ export default function CustomerProfile() {
                     <p className="text-xs font-medium text-muted-foreground uppercase">
                       Joined
                     </p>
-                    <p>
-                      {new Date(customer.created_at).toLocaleString()}
-                    </p>
+                    <p>{formatDate(customer.created_at)}</p>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -479,9 +496,7 @@ export default function CustomerProfile() {
                           <TableCell className="font-medium">
                             {order.order_number}
                           </TableCell>
-                          <TableCell>
-                            {new Date(order.created_at).toLocaleString()}
-                          </TableCell>
+                          <TableCell>{formatDate(order.created_at)}</TableCell>
                           <TableCell>
                             <Badge
                               variant={
@@ -497,7 +512,8 @@ export default function CustomerProfile() {
                           </TableCell>
                           <TableCell>{order.payment_status}</TableCell>
                           <TableCell>
-                            R {order.total.toFixed(2)}
+                            {currencySymbol(order.currency)}
+                            {order.total.toFixed(2)}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -668,4 +684,3 @@ export default function CustomerProfile() {
     </div>
   );
 }
-

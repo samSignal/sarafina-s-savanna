@@ -29,4 +29,3 @@ class ClientOrderController extends Controller
         return response()->json($order);
     }
 }
-

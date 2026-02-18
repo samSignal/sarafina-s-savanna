@@ -64,6 +64,7 @@ class ClientProfileController extends Controller
                     'status' => $order->status,
                     'payment_status' => $order->payment_status,
                     'total' => (float) $order->total,
+                    'currency' => $order->currency,
                     'created_at' => $order->created_at,
                 ];
             })->all(),
@@ -74,4 +75,3 @@ class ClientProfileController extends Controller
         ]);
     }
 }
-

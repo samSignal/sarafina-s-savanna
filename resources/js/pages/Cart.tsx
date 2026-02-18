@@ -8,11 +8,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface LiveProduct {
   id: number;
   name: string;
   price: number;
+  price_uk_eu?: number;
+  price_international?: number;
   image: string;
   stock: number;
   status: string;
@@ -24,6 +27,7 @@ const Cart = () => {
   const navigate = useNavigate();
   const [liveProducts, setLiveProducts] = useState<LiveProduct[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const { format, convert, selected } = useCurrency();
 
   useEffect(() => {
     const syncCart = async () => {
@@ -44,9 +48,10 @@ const Cart = () => {
         data.forEach((product) => {
           const inCart = items.find((item) => item.id === product.id);
           if (inCart) {
-            if (inCart.price !== Number(product.price) || inCart.name !== product.name || inCart.image !== product.image) {
+            const ukPrice = Number(product.price_uk_eu ?? product.price);
+            if (inCart.price !== ukPrice || inCart.name !== product.name || inCart.image !== product.image) {
               updateItem(product.id, {
-                price: Number(product.price),
+                price: ukPrice,
                 name: product.name,
                 image: product.image,
               });
@@ -106,6 +111,8 @@ const Cart = () => {
             product_id: item.id,
             quantity: item.quantity,
           })),
+          currency: selected.code,
+          rate: selected.rate,
         }),
       });
 
@@ -127,6 +134,7 @@ const Cart = () => {
       const data = await response.json();
 
       if (data.url) {
+        clearCart();
         window.location.href = data.url;
       } else {
         toast.error("Checkout session could not be created.");
@@ -164,7 +172,9 @@ const Cart = () => {
                 const isMissing = !live;
                 const isOutOfStock = live?.status === "Out of Stock";
                 const isLowStock = live?.status === "Low Stock";
-                const displayPrice = live ? Number(live.price) : item.price;
+                const baseUkEu = live ? Number(live.price_uk_eu ?? live.price) : item.price;
+                const baseIntl = live ? Number(live.price_international ?? live.price) : item.price;
+                const displayPrice = convert(baseUkEu, baseIntl);
 
                 return (
                   <div
@@ -244,15 +254,15 @@ const Cart = () => {
                           </Button>
                         </div>
                       </div>
-                      {live && displayPrice !== item.price && (
+                      {live && baseUkEu !== item.price && (
                         <p className="text-xs text-muted-foreground">
-                          Price updated to R{displayPrice.toFixed(2)}
+                          Price updated to {format(baseUkEu, baseIntl)}
                         </p>
                       )}
                     </div>
                     <div className="text-right space-y-2">
                       <p className="font-semibold">
-                        R{(displayPrice * item.quantity).toFixed(2)}
+                        {format(baseUkEu * item.quantity, baseIntl * item.quantity)}
                       </p>
                       <Button
                         variant="outline"
@@ -275,7 +285,20 @@ const Cart = () => {
               </div>
               <div className="flex justify-between text-base font-semibold">
                 <span>Total</span>
-                <span>R{totalPrice.toFixed(2)}</span>
+                <span>
+                  {format(
+                    items.reduce((sum, item) => {
+                      const live = liveMap.get(item.id);
+                      const uk = live ? Number(live.price_uk_eu ?? live.price) : item.price;
+                      return sum + uk * item.quantity;
+                    }, 0),
+                    items.reduce((sum, item) => {
+                      const live = liveMap.get(item.id);
+                      const intl = live ? Number(live.price_international ?? live.price) : item.price;
+                      return sum + intl * item.quantity;
+                    }, 0)
+                  )}
+                </span>
               </div>
               {hasUnavailableItems && (
                 <p className="text-xs text-destructive">

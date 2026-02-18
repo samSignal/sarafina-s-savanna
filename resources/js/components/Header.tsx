@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,6 +14,7 @@ export const Header = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const { totalItems } = useCart();
+  const { currencies, selected, setCurrency } = useCurrency();
   const [navItems, setNavItems] = useState([
     { label: "Home", href: "/" },
     { label: "Shop All", href: "/shop", highlight: true },
@@ -100,6 +102,19 @@ export const Header = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-1">
+              <select
+                className="text-xs border rounded-md px-2 py-1 bg-white"
+                value={selected.code}
+                onChange={(e) => setCurrency(e.target.value)}
+              >
+                {currencies.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.symbol} {c.code}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Button
               variant="ghost"
               size="icon"

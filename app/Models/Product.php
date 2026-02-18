@@ -16,6 +16,9 @@ class Product extends Model
         'name',
         'description',
         'price',
+        'desired_net_price',
+        'price_uk_eu',
+        'price_international',
         'stock',
         'image',
         'status'

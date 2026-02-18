@@ -13,6 +13,7 @@ class Order extends Model
         'order_number',
         'total',
         'total_amount',
+        'currency',
         'status',
         'payment_status',
         'shipping_method',

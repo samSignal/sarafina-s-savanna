@@ -7,12 +7,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface Product {
   id: number;
   name: string;
   description: string;
   price: number;
+  price_uk_eu?: number;
+  price_international?: number;
   image: string;
   stock: number;
   status: string;
@@ -35,6 +38,7 @@ const Category = () => {
   const [loading, setLoading] = useState(true);
   const [quantities, setQuantities] = useState<Record<number, number>>({});
   const { addItem } = useCart();
+  const { format } = useCurrency();
 
   useEffect(() => {
     const fetchDepartment = async () => {
@@ -160,7 +164,10 @@ const Category = () => {
                     </p>
                     <div className="flex items-center justify-between mt-auto gap-2">
                       <span className="font-bold text-lg">
-                        R{Number(product.price).toFixed(2)}
+                        {format(
+                          Number(product.price_uk_eu ?? product.price),
+                          Number(product.price_international ?? product.price)
+                        )}
                       </span>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center border rounded-md">
@@ -220,11 +227,15 @@ const Category = () => {
                               toast.error(`Only ${product.stock} in stock for ${product.name}`);
                               return;
                             }
+                            const baseUkEu = Number(product.price_uk_eu ?? product.price);
+                            const baseIntl = Number(product.price_international ?? product.price);
+                            const unitPrice = baseUkEu;
+
                             addItem(
                               {
                                 id: product.id,
                                 name: product.name,
-                                price: Number(product.price),
+                                price: unitPrice,
                                 image: product.image,
                               },
                               qty
