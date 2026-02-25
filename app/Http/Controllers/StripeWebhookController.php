@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Services\LoyaltyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Stripe\Event as StripeEvent;
@@ -52,6 +53,20 @@ class StripeWebhookController extends Controller
                         'status' => 'Completed',
                         'payment_status' => 'Paid',
                     ]);
+
+                    try {
+                        $loyaltyService = app(LoyaltyService::class);
+                        $loyaltyService->awardPoints($order);
+
+                        if ($order->points_redeemed > 0) {
+                            $user = $order->user;
+                            if ($user) {
+                                $loyaltyService->redeemPoints($user, $order->points_redeemed, $order);
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        Log::error("Loyalty processing failed for order {$order->id}: " . $e->getMessage());
+                    }
                 }
             }
         }

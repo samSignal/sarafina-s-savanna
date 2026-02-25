@@ -28,6 +28,7 @@ import GiftCards from "./pages/admin/GiftCards";
 import Promotions from "./pages/admin/Promotions";
 import Delivery from "./pages/admin/Delivery";
 import Inventory from "./pages/admin/Inventory";
+import Sales from "./pages/admin/Sales";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="products" element={<Products />} />
+            <Route path="sales" element={<Sales />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="departments" element={<Departments />} />
             <Route path="categories" element={<Categories />} />

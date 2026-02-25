@@ -34,6 +34,7 @@ class AdminCustomerController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone ?? 'N/A',
+                'points_balance' => $user->points_balance ?? 0,
                 'location' => $location,
                 'orders' => $orderCount,
                 'spent' => (float) $user->orders_sum_total,
@@ -87,6 +88,7 @@ class AdminCustomerController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone ?? null,
+                'points_balance' => $user->points_balance ?? 0,
                 'status' => $status,
                 'order_count' => $orderCount,
                 'total_spent' => $totalSpent,
@@ -104,7 +106,21 @@ class AdminCustomerController extends Controller
                     'created_at' => $order->created_at,
                 ];
             })->all(),
-            'loyalty_ledger' => [],
+            'loyalty_ledger' => $user->loyaltyTransactions()
+                ->latest()
+                ->take(20)
+                ->get()
+                ->map(function ($transaction) {
+                    return [
+                        'id' => $transaction->id,
+                        'type' => $transaction->type,
+                        'points' => $transaction->points,
+                        'description' => $transaction->description,
+                        'created_at' => $transaction->created_at,
+                    ];
+                })
+                ->values()
+                ->all(),
             'gift_cards' => [],
             'stokvel' => null,
             'messages' => [],

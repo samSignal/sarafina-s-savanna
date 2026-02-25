@@ -27,6 +27,19 @@ class Order extends Model
         'shipping_city',
         'shipping_postcode',
         'shipping_country',
+        'delivery_cost',
+        'delivery_status',
+        'estimated_delivery_date',
+        'contact_person',
+        'contact_phone',
+        'points_redeemed',
+        'discount_amount',
+        'points_earned',
+    ];
+
+    protected $casts = [
+        'estimated_delivery_date' => 'datetime',
+        'discount_amount' => 'decimal:2',
     ];
 
     public function user(): BelongsTo

@@ -16,7 +16,7 @@ export default function Departments() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentDept, setCurrentDept] = useState<{ id: number | null; name: string; description: string; status: string; image: string }>({ id: null, name: "", description: "", status: "Active", image: "" });
+    const [currentDept, setCurrentDept] = useState<{ id: number | null; name: string; description: string; status: string; image: string; points_multiplier: string; loyalty_reason: string }>({ id: null, name: "", description: "", status: "Active", image: "", points_multiplier: "1.00", loyalty_reason: "" });
     const [imageFile, setImageFile] = useState<File | null>(null);
 
     useEffect(() => {
@@ -47,11 +47,13 @@ export default function Departments() {
             setIsEditing(true);
             setCurrentDept({ 
                 ...dept,
-                image: dept.image || "" 
+                image: dept.image || "",
+                points_multiplier: dept.points_multiplier || "1.00",
+                loyalty_reason: dept.loyalty_reason || ""
             });
         } else {
             setIsEditing(false);
-            setCurrentDept({ id: null, name: "", description: "", status: "Active", image: "" });
+            setCurrentDept({ id: null, name: "", description: "", status: "Active", image: "", points_multiplier: "1.00", loyalty_reason: "" });
         }
         setImageFile(null);
         setIsDialogOpen(true);
@@ -68,6 +70,8 @@ export default function Departments() {
             formData.append("name", currentDept.name);
             formData.append("description", currentDept.description || "");
             formData.append("status", currentDept.status);
+            formData.append("points_multiplier", currentDept.points_multiplier);
+            formData.append("loyalty_reason", currentDept.loyalty_reason);
             if (currentDept.image) {
                 formData.append("image", currentDept.image);
             }
@@ -178,6 +182,28 @@ export default function Departments() {
                                 </Select>
                             </div>
                             <div className="grid gap-2">
+                                <Label htmlFor="points_multiplier">Points Multiplier</Label>
+                                <Input 
+                                    id="points_multiplier" 
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    placeholder="1.0"
+                                    value={currentDept.points_multiplier}
+                                    onChange={(e) => setCurrentDept({...currentDept, points_multiplier: e.target.value})}
+                                />
+                                <p className="text-sm text-muted-foreground">Default is 1.0. Higher means more points.</p>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="loyalty_reason">Loyalty Reason</Label>
+                                <Input 
+                                    id="loyalty_reason" 
+                                    placeholder="e.g., High margin item" 
+                                    value={currentDept.loyalty_reason || ""}
+                                    onChange={(e) => setCurrentDept({...currentDept, loyalty_reason: e.target.value})}
+                                />
+                            </div>
+                            <div className="grid gap-2">
                                 <Label htmlFor="image">Image URL</Label>
                                 <Input 
                                     id="image" 
@@ -229,43 +255,42 @@ export default function Departments() {
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead>Image</TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Description</TableHead>
-                            <TableHead>Products</TableHead>
                             <TableHead>Status</TableHead>
+                            <TableHead>Multiplier</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {filteredDepartments.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                                     No departments found.
                                 </TableCell>
                             </TableRow>
                         ) : (
                             filteredDepartments.map((dept) => (
                                 <TableRow key={dept.id}>
-                                    <TableCell className="font-medium flex items-center gap-2">
+                                    <TableCell>
                                         {dept.image ? (
-                                            <div className="h-10 w-10 rounded overflow-hidden bg-white border flex items-center justify-center">
-                                                <img src={dept.image} alt={dept.name} className="max-h-full max-w-full object-contain" />
-                                            </div>
+                                            <img src={dept.image} alt={dept.name} className="h-10 w-10 object-cover rounded-md" />
                                         ) : (
-                                            <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center text-primary">
-                                                <FolderTree className="h-4 w-4" />
+                                            <div className="h-10 w-10 bg-muted rounded-md flex items-center justify-center">
+                                                <FolderTree className="h-5 w-5 text-muted-foreground" />
                                             </div>
                                         )}
-                                        {dept.name}
                                     </TableCell>
-                                    <TableCell className="max-w-xs truncate" title={dept.description}>
-                                        {dept.description}
-                                    </TableCell>
-                                    <TableCell>{dept.productCount}</TableCell>
+                                    <TableCell className="font-medium">{dept.name}</TableCell>
+                                    <TableCell className="max-w-xs truncate">{dept.description}</TableCell>
                                     <TableCell>
-                                        <Badge variant={dept.status === "Active" ? "default" : "secondary"} className={dept.status === "Active" ? "bg-green-100 text-green-800 hover:bg-green-200 border-green-200" : "bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200"}>
+                                        <Badge variant={dept.status === "Active" ? "default" : "secondary"}>
                                             {dept.status}
                                         </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline">{dept.points_multiplier || "1.00"}x</Badge>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>

@@ -25,6 +25,9 @@ interface Order {
   currency: string;
   status: string;
   payment_status: string;
+  shipping_method: string;
+  delivery_status: string | null;
+  estimated_delivery_date: string | null;
   created_at: string;
   items: OrderItem[];
 }
@@ -202,13 +205,31 @@ const MyOrders = () => {
                           {currencySymbol(order.currency)}
                           {Number(order.total).toFixed(2)}
                         </p>
-                        <div className="flex gap-2 justify-end mt-1">
-                          <Badge variant="outline">
-                            {order.status}
-                          </Badge>
-                          <Badge variant="outline">
-                            Payment: {order.payment_status}
-                          </Badge>
+                        <div className="flex flex-col gap-1 items-end mt-1">
+                          <div className="flex gap-2 justify-end">
+                            <Badge variant="outline">
+                              {order.status}
+                            </Badge>
+                            <Badge variant="outline">
+                              Payment: {order.payment_status}
+                            </Badge>
+                          </div>
+                          {order.shipping_method === 'delivery' ? (
+                             <div className="flex flex-col items-end gap-1">
+                                <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200">
+                                  Delivery: {order.delivery_status || 'Pending'}
+                                </Badge>
+                                {order.estimated_delivery_date && (
+                                  <span className="text-xs text-muted-foreground">
+                                    ETA: {new Date(order.estimated_delivery_date).toLocaleString()}
+                                  </span>
+                                )}
+                             </div>
+                          ) : (
+                             <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
+                               Collection
+                             </Badge>
+                          )}
                         </div>
                       </div>
                     </div>

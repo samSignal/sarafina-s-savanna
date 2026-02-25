@@ -47,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: data.id,
             name: data.name,
             email: data.email,
+            points_balance: data.points_balance,
           });
         } else {
           localStorage.removeItem("authToken");

@@ -206,7 +206,7 @@ export const Header = () => {
         <div className="container">
           <ul className="flex items-center justify-center gap-1">
             {navItems.map((item) => (
-              <li key={item.label} className="group relative">
+              <li key={item.href} className="group relative">
                 <a
                   href={item.href}
                   className={`flex items-center gap-1 px-4 py-3 text-sm font-medium transition-colors ${
@@ -222,7 +222,7 @@ export const Header = () => {
                   <div className="absolute top-full left-0 w-48 bg-background shadow-medium rounded-b-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                     {item.dropdown.map((subItem) => (
                       <a
-                        key={subItem.label}
+                        key={subItem.href}
                         href={subItem.href}
                         className="block px-4 py-3 text-sm text-foreground hover:bg-muted hover:text-primary transition-colors"
                       >
@@ -249,7 +249,7 @@ export const Header = () => {
             <nav className="container py-4">
               <ul className="space-y-1">
                 {navItems.map((item) => (
-                  <li key={item.label}>
+                  <li key={item.href}>
                     <a
                       href={item.href}
                       className={`block px-4 py-3 text-sm font-medium rounded-lg transition-colors ${

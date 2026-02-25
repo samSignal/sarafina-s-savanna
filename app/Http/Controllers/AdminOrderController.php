@@ -10,7 +10,7 @@ class AdminOrderController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Order::with(['user'])
+        $query = Order::with(['user', 'items'])
             ->latest();
 
         if ($request->filled('q')) {
@@ -33,26 +33,67 @@ class AdminOrderController extends Controller
             $query->where('payment_status', $request->string('payment_status')->toString());
         }
 
+        if ($request->filled('delivery_status')) {
+            $query->where('delivery_status', $request->string('delivery_status')->toString());
+        }
+
         $orders = $query->limit(200)->get();
 
         return response()->json(
             $orders->map(function (Order $order) {
+                $rate = (float) $order->exchange_rate ?: 1.0;
+
                 return [
                     'id' => $order->id,
                     'order_number' => $order->order_number,
                     'status' => $order->status,
+                    'shipping_method' => $order->shipping_method,
+                    'delivery_status' => $order->delivery_status,
+                    'estimated_delivery_date' => $order->estimated_delivery_date,
                     'payment_status' => $order->payment_status,
                     'total' => (float) $order->total,
                     'currency' => $order->currency,
-                    'exchange_rate' => (float) $order->exchange_rate,
+                    'exchange_rate' => $rate,
                     'total_gbp' => (float) $order->total_gbp,
                     'created_at' => $order->created_at,
                     'customer_id' => $order->user?->id,
                     'customer_name' => $order->user?->name,
                     'customer_email' => $order->user?->email,
+                    'shipping_address' => [
+                        'line1' => $order->shipping_address_line1,
+                        'line2' => $order->shipping_address_line2,
+                        'city' => $order->shipping_city,
+                        'postcode' => $order->shipping_postcode,
+                        'country' => $order->shipping_country,
+                    ],
+                    'items' => $order->items->map(function ($item) use ($rate) {
+                        $unitPrice = (float) $item->unit_price;
+                        $lineTotal = (float) $item->line_total;
+
+                        return [
+                            'id' => $item->id,
+                            'product_name' => $item->product_name,
+                            'quantity' => $item->quantity,
+                            'unit_price' => $unitPrice,
+                            'line_total' => $lineTotal,
+                            'unit_price_gbp' => $unitPrice / $rate,
+                            'line_total_gbp' => $lineTotal / $rate,
+                        ];
+                    }),
                 ];
             })->all()
         );
+    }
+
+    public function update(Request $request, Order $order): JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => 'required|string',
+        ]);
+
+        $order->update(['status' => $validated['status']]);
+
+        return response()->json(['message' => 'Order status updated']);
     }
 }
 

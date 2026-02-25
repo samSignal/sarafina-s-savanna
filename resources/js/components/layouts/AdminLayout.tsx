@@ -1,5 +1,5 @@
 import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar"
-import { LayoutDashboard, Package, ShoppingCart, Settings, LogOut, User, Bell, Shield, Users, FolderTree, Award, RefreshCcw, Gift, Tag, Truck, Layers, ClipboardList } from "lucide-react"
+import { LayoutDashboard, Package, ShoppingCart, Settings, LogOut, User, Bell, Shield, Users, FolderTree, Award, RefreshCcw, Gift, Tag, Truck, Layers, ClipboardList, TrendingUp } from "lucide-react"
 import { Outlet, Link, useLocation } from "react-router-dom"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,11 @@ const items = [
     title: "Dashboard",
     url: "/admin",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Sales",
+    url: "/admin/sales",
+    icon: TrendingUp,
   },
   {
     title: "Products",

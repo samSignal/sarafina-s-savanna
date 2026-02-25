@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { PoundSterling, Package, ShoppingCart, TrendingUp, Users, Calendar as CalendarIcon } from "lucide-react";
+import { PoundSterling, Package, ShoppingCart, TrendingUp, Users, Calendar as CalendarIcon, Award } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
 import { useEffect, useState } from "react";
 import { DateRange } from "react-day-picker";
@@ -30,6 +30,8 @@ interface RecentSale {
   name: string;
   email: string;
   amount: number;
+  currency?: string;
+  original_amount?: number;
   initials: string;
 }
 
@@ -39,6 +41,10 @@ interface AnalyticsStats {
   orders_growth: number;
   products_count: number;
   active_now: number;
+  loyalty_stats?: {
+    issued: number;
+    redeemed: number;
+  };
   chart_data: ChartData[];
   recent_sales: RecentSale[];
   period?: {
@@ -55,6 +61,7 @@ export default function Dashboard() {
     orders_growth: 0,
     products_count: 0,
     active_now: 0,
+    loyalty_stats: { issued: 0, redeemed: 0 },
     chart_data: [],
     recent_sales: []
   });
@@ -172,7 +179,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -215,6 +222,26 @@ export default function Dashboard() {
           <CardContent>
             <div className="text-2xl font-bold">{loading ? "..." : `+${stats.active_now}`}</div>
             <p className="text-xs text-muted-foreground">Active in last 24h</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Loyalty Issued</CardTitle>
+            <Award className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "..." : `+${stats.loyalty_stats?.issued ?? 0}`} pts</div>
+            <p className="text-xs text-muted-foreground">in selected period</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Loyalty Redeemed</CardTitle>
+            <Award className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "..." : `-${stats.loyalty_stats?.redeemed ?? 0}`} pts</div>
+            <p className="text-xs text-muted-foreground">in selected period</p>
           </CardContent>
         </Card>
       </div>
@@ -268,7 +295,14 @@ export default function Dashboard() {
                         <p className="text-sm font-medium leading-none">{sale.name}</p>
                         <p className="text-xs text-muted-foreground">{sale.email}</p>
                     </div>
-                    <div className="ml-auto font-medium">+£{sale.amount.toFixed(2)}</div>
+                    <div className="ml-auto flex flex-col items-end font-medium">
+                      <span>+£{sale.amount.toFixed(2)}</span>
+                      {sale.currency && sale.currency !== 'GBP' && sale.original_amount && (
+                        <span className="text-xs text-muted-foreground">
+                            {sale.currency} {sale.original_amount.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
                 </div>
               ))}
               {!loading && stats.recent_sales.length === 0 && (

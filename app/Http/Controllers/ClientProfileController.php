@@ -4,9 +4,34 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\LoyaltyTransaction;
+use App\Services\LoyaltyService;
 
 class ClientProfileController extends Controller
 {
+    public function update(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'birthday' => 'nullable|date',
+        ]);
+
+        $user->update($validated);
+
+        // Check for birthday bonus if birthday is set
+        if ($user->wasChanged('birthday') && $user->birthday) {
+            app(LoyaltyService::class)->checkBirthdayBonus($user);
+        }
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user->fresh(),
+        ]);
+    }
+
     public function show(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -45,12 +70,28 @@ class ClientProfileController extends Controller
             ->values()
             ->all();
 
+        $loyaltyLedger = LoyaltyTransaction::where('user_id', $user->id)
+            ->latest()
+            ->take(20)
+            ->get()
+            ->map(function ($transaction) {
+                return [
+                    'id' => $transaction->id,
+                    'type' => $transaction->type,
+                    'points' => $transaction->points,
+                    'description' => $transaction->description,
+                    'created_at' => $transaction->created_at,
+                ];
+            });
+
         return response()->json([
             'customer' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone ?? null,
+                'points_balance' => $user->points_balance ?? 0,
+                'birthday' => $user->birthday,
                 'status' => $status,
                 'order_count' => $orderCount,
                 'total_spent' => $totalSpent,
@@ -62,13 +103,16 @@ class ClientProfileController extends Controller
                     'id' => $order->id,
                     'order_number' => $order->order_number,
                     'status' => $order->status,
+                    'shipping_method' => $order->shipping_method,
+                    'delivery_status' => $order->delivery_status,
+                    'estimated_delivery_date' => $order->estimated_delivery_date,
                     'payment_status' => $order->payment_status,
                     'total' => (float) $order->total,
                     'currency' => $order->currency,
                     'created_at' => $order->created_at,
                 ];
             })->all(),
-            'loyalty_ledger' => [],
+            'loyalty_ledger' => $loyaltyLedger,
             'gift_cards' => [],
             'stokvel' => null,
             'messages' => [],

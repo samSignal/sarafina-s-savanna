@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\LoyaltyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -23,7 +24,14 @@ class AuthController extends Controller
             'password' => $validated['password'],
         ]);
 
+        app(LoyaltyService::class)->processNewAccountBonus($user);
+
         $token = $user->createToken('client')->plainTextToken;
+
+        // Check for birthday bonus
+        if ($user->birthday) {
+            app(LoyaltyService::class)->checkBirthdayBonus($user);
+        }
 
         return response()->json([
             'user' => [
@@ -51,8 +59,14 @@ class AuthController extends Controller
         }
 
         $user->tokens()->delete();
+        $user->update(['last_activity_at' => now()]);
 
         $token = $user->createToken('client')->plainTextToken;
+
+        // Check for birthday bonus
+        if ($user->birthday) {
+            app(LoyaltyService::class)->checkBirthdayBonus($user);
+        }
 
         return response()->json([
             'user' => [

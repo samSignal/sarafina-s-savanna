@@ -23,6 +23,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'points_balance',
+        'birthday',
+        'last_activity_at',
     ];
 
     /**
@@ -45,11 +48,18 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'birthday' => 'date',
+            'last_activity_at' => 'datetime',
         ];
     }
 
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function loyaltyTransactions(): HasMany
+    {
+        return $this->hasMany(LoyaltyTransaction::class);
     }
 }

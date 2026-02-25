@@ -29,6 +29,7 @@ interface CustomerSummary {
   total_spent: number;
   created_at: string;
   addresses: Address[];
+  points_balance: number;
 }
 
 interface Order {
@@ -36,6 +37,9 @@ interface Order {
   order_number: string;
   status: string;
   payment_status: string;
+  shipping_method: string;
+  delivery_status: string | null;
+  estimated_delivery_date: string | null;
   total: number;
   currency: string;
   created_at: string;
@@ -283,12 +287,7 @@ const Account = () => {
                       <div className="flex items-center gap-2">
                         <Star className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {data.loyalty_ledger.length > 0
-                            ? `${data.loyalty_ledger.reduce(
-                                (sum, entry) => sum + entry.points,
-                                0
-                              )} pts`
-                            : "No points yet"}
+                          {data.customer.points_balance ?? 0} pts
                         </span>
                       </div>
                     </div>
@@ -406,6 +405,7 @@ const Account = () => {
                               <TableHead>Order #</TableHead>
                               <TableHead>Date</TableHead>
                               <TableHead>Status</TableHead>
+                              <TableHead>Delivery</TableHead>
                               <TableHead>Payment</TableHead>
                               <TableHead>Total</TableHead>
                             </TableRow>
@@ -429,6 +429,22 @@ const Account = () => {
                                   >
                                     {order.status}
                                   </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {order.shipping_method === 'delivery' ? (
+                                    <div className="flex flex-col">
+                                      <Badge variant="secondary" className="w-fit mb-1">
+                                        {order.delivery_status || 'Pending'}
+                                      </Badge>
+                                      {order.estimated_delivery_date && (
+                                        <span className="text-xs text-muted-foreground">
+                                          ETA: {new Date(order.estimated_delivery_date).toLocaleDateString()}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <Badge variant="secondary">Collection</Badge>
+                                  )}
                                 </TableCell>
                                 <TableCell>{order.payment_status}</TableCell>
                                 <TableCell>

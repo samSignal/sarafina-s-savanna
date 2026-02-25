@@ -54,12 +54,16 @@ class DepartmentController extends Controller
             'status' => 'required|in:Active,Inactive',
             'image' => 'nullable|string',
             'image_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
+            'points_multiplier' => 'nullable|numeric|min:0',
+            'loyalty_reason' => 'nullable|string',
         ]);
 
         if ($request->hasFile('image_file')) {
             $path = $request->file('image_file')->store('departments', 'public');
             $validated['image'] = '/storage/' . $path;
         }
+
+        $validated['points_multiplier'] = $validated['points_multiplier'] ?? 1.00;
 
         unset($validated['image_file']);
 
@@ -76,6 +80,8 @@ class DepartmentController extends Controller
             'status' => 'required|in:Active,Inactive',
             'image' => 'nullable|string',
             'image_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
+            'points_multiplier' => 'nullable|numeric|min:0',
+            'loyalty_reason' => 'nullable|string',
         ]);
 
         if ($request->hasFile('image_file')) {

@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
+use App\Models\LoyaltyTransaction;
+
 class AdminAnalyticsController extends Controller
 {
     public function index(Request $request): JsonResponse
@@ -25,7 +27,7 @@ class AdminAnalyticsController extends Controller
         // 1. Total Revenue (in selected period)
         $totalRevenue = Order::where('status', '!=', 'cancelled')
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->sum('total');
+            ->sum(DB::raw('COALESCE(total_gbp, total)'));
             
         // 2. Orders Count (in selected period)
         $ordersCount = Order::whereBetween('created_at', [$startDate, $endDate])
@@ -36,13 +38,22 @@ class AdminAnalyticsController extends Controller
             
         $ordersGrowth = $ordersPreviousCount > 0 ? (($ordersCount - $ordersPreviousCount) / $ordersPreviousCount) * 100 : ($ordersCount > 0 ? 100 : 0);
 
-        // 3. Products Count (Total in system, not affected by date filter usually, but let's show New Products in period if requested? No, stick to Total for Dashboard usually)
+        // 3. Products Count (Total in system)
         $productsCount = Product::count();
         
-        // 4. Active Now (Users active in last 24 hours - standard metric)
+        // 4. Active Now (Users active in last 24 hours)
         $activeNow = User::where('updated_at', '>=', Carbon::now()->subDay())->count();
 
-        // 5. Overview Chart
+        // 5. Loyalty Stats (Total Issued vs Redeemed in period)
+        $loyaltyIssued = LoyaltyTransaction::whereIn('type', ['earned', 'bonus'])
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->sum('points');
+            
+        $loyaltyRedeemed = abs(LoyaltyTransaction::where('type', 'redeemed')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->sum('points'));
+
+        // 6. Overview Chart
         // If range <= 31 days, show Daily. Else show Monthly.
         if ($diffInDays <= 31) {
             $dateFormat = '%Y-%m-%d'; // Daily
@@ -55,7 +66,7 @@ class AdminAnalyticsController extends Controller
         }
 
         $revenueData = Order::select(
-            DB::raw('sum(total) as total'), 
+            DB::raw('sum(COALESCE(total_gbp, total)) as total'), 
             DB::raw("DATE_FORMAT(created_at, '$dateFormat') as date_key"),
             DB::raw("DATE_FORMAT(created_at, '$dateFormat') as display_date")
         )
@@ -81,12 +92,23 @@ class AdminAnalyticsController extends Controller
             ->take(5)
             ->get()
             ->map(function($order) {
+                $initials = 'G';
+                if ($order->user) {
+                    $parts = explode(' ', $order->user->name);
+                    $initials = '';
+                    foreach(array_slice($parts, 0, 2) as $part) {
+                        $initials .= strtoupper(substr($part, 0, 1));
+                    }
+                }
+                
                 return [
                     'id' => $order->id,
-                    'name' => $order->user ? $order->user->name : 'Guest', // Handle potential null user
+                    'name' => $order->user ? $order->user->name : 'Guest',
                     'email' => $order->user ? $order->user->email : 'N/A',
-                    'amount' => (float)$order->total,
-                    'initials' => $order->user ? collect(explode(' ', $order->user->name))->map(fn($w) => strtoupper(substr($w, 0, 1)))->take(2)->join('') : 'G',
+                    'amount' => (float)($order->total_gbp ?? $order->total),
+                    'currency' => $order->currency ?? 'GBP',
+                    'original_amount' => (float)$order->total,
+                    'initials' => $initials,
                 ];
             });
 
@@ -96,6 +118,10 @@ class AdminAnalyticsController extends Controller
             'orders_growth' => round($ordersGrowth, 1),
             'products_count' => $productsCount,
             'active_now' => $activeNow,
+            'loyalty_stats' => [
+                'issued' => (int)$loyaltyIssued,
+                'redeemed' => (int)$loyaltyRedeemed
+            ],
             'chart_data' => $chartData,
             'recent_sales' => $recentSales,
             'period' => [
