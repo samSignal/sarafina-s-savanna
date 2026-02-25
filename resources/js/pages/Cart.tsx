@@ -27,6 +27,7 @@ const Cart = () => {
   const navigate = useNavigate();
   const [liveProducts, setLiveProducts] = useState<LiveProduct[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { format, convert, selected } = useCurrency();
 
   useEffect(() => {
@@ -83,6 +84,8 @@ const Cart = () => {
   );
 
   const handleCheckout = async () => {
+    if (isCheckingOut) return;
+    
     if (!totalItems) {
       toast.error("Your cart is empty");
       return;
@@ -98,6 +101,8 @@ const Cart = () => {
       navigate("/login");
       return;
     }
+
+    setIsCheckingOut(true);
 
     try {
       const response = await fetch("/api/checkout/session", {
@@ -117,6 +122,7 @@ const Cart = () => {
       });
 
       if (!response.ok) {
+        setIsCheckingOut(false);
         let message = "Unable to start checkout. Please try again.";
 
         try {
@@ -137,9 +143,11 @@ const Cart = () => {
         clearCart();
         window.location.href = data.url;
       } else {
+        setIsCheckingOut(false);
         toast.error("Checkout session could not be created.");
       }
     } catch {
+      setIsCheckingOut(false);
       toast.error("Something went wrong starting the checkout.");
     }
   };
@@ -308,9 +316,9 @@ const Cart = () => {
               <Button
                 className="w-full mt-4"
                 onClick={handleCheckout}
-                disabled={hasUnavailableItems || syncing}
+                disabled={hasUnavailableItems || syncing || isCheckingOut}
               >
-                Proceed to checkout
+                {isCheckingOut ? "Processing..." : "Proceed to checkout"}
               </Button>
               <Button
                 className="w-full"

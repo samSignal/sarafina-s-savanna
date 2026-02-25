@@ -96,7 +96,7 @@ export default function Refunds() {
                                 <FileText className="h-4 w-4 text-muted-foreground" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold">$1,245.00</div>
+                                <div className="text-2xl font-bold">£1,245.00</div>
                                 <p className="text-xs text-muted-foreground">This month</p>
                             </CardContent>
                         </Card>
@@ -140,7 +140,7 @@ export default function Refunds() {
                                         <TableCell>{refund.orderId}</TableCell>
                                         <TableCell>{refund.customer}</TableCell>
                                         <TableCell className="max-w-[200px] truncate" title={refund.reason}>{refund.reason}</TableCell>
-                                        <TableCell>${refund.amount.toFixed(2)}</TableCell>
+                                        <TableCell>£{refund.amount.toFixed(2)}</TableCell>
                                         <TableCell>
                                             <Badge variant={
                                                 refund.status === "Approved" ? "default" : 

@@ -272,7 +272,7 @@ const Account = () => {
                       <div className="flex items-center gap-2">
                         <Wallet className="h-4 w-4 text-muted-foreground" />
                         <span className="text-lg font-semibold">
-                          R {data.customer.total_spent.toFixed(2)}
+                          £{data.customer.total_spent.toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -537,7 +537,7 @@ const Account = () => {
                         <div>
                           Contribution amount:{" "}
                           {data.stokvel.contribution_amount
-                            ? `R ${data.stokvel.contribution_amount.toFixed(2)}`
+                            ? `£${data.stokvel.contribution_amount.toFixed(2)}`
                             : "Not set"}
                         </div>
                         <div>

@@ -1,72 +1,64 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Filter, MoreHorizontal, Mail, Phone, MapPin, User } from "lucide-react";
+import { Search, Filter, MoreHorizontal, Mail, Phone, MapPin, User, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
-const customers = [
-    { 
-        id: 1, 
-        name: "John Doe", 
-        email: "john@example.com", 
-        phone: "+1 (555) 123-4567",
-        location: "New York, USA",
-        orders: 12,
-        spent: 1250.00,
-        status: "Active",
-        joinDate: "2023-01-15"
-    },
-    { 
-        id: 2, 
-        name: "Jane Smith", 
-        email: "jane@example.com", 
-        phone: "+1 (555) 987-6543",
-        location: "London, UK",
-        orders: 5,
-        spent: 450.50,
-        status: "Active",
-        joinDate: "2023-03-22"
-    },
-    { 
-        id: 3, 
-        name: "Robert Johnson", 
-        email: "robert@example.com", 
-        phone: "+1 (555) 456-7890",
-        location: "Toronto, Canada",
-        orders: 0,
-        spent: 0.00,
-        status: "Inactive",
-        joinDate: "2023-11-05"
-    },
-    { 
-        id: 4, 
-        name: "Alice Brown", 
-        email: "alice@example.com", 
-        phone: "+1 (555) 789-0123",
-        location: "Sydney, Australia",
-        orders: 24,
-        spent: 3400.00,
-        status: "VIP",
-        joinDate: "2022-11-30"
-    },
-    { 
-        id: 5, 
-        name: "Charlie Davis", 
-        email: "charlie@example.com", 
-        phone: "+1 (555) 234-5678",
-        location: "Berlin, Germany",
-        orders: 2,
-        spent: 120.00,
-        status: "Active",
-        joinDate: "2023-09-10"
-    },
-];
+interface Customer {
+    id: number;
+    name: string;
+    email: string;
+    phone: string;
+    location: string;
+    orders: number;
+    spent: number;
+    status: string;
+    joinDate: string;
+}
 
 export default function Customers() {
   const navigate = useNavigate();
+  const { token } = useAuth();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+        try {
+            const response = await fetch('/api/admin/customers', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setCustomers(data);
+            } else {
+                console.error('Failed to fetch customers:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Failed to fetch customers', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (token) {
+        fetchCustomers();
+    }
+  }, [token]);
+
+  const filteredCustomers = customers.filter(customer => 
+    customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    customer.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -84,14 +76,19 @@ export default function Customers() {
         <div className="flex items-center gap-2 flex-1 max-w-sm">
             <div className="relative flex-1">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search customers..." className="pl-8" />
+                <Input 
+                    placeholder="Search customers..." 
+                    className="pl-8" 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
             </div>
             <Button variant="outline" size="icon">
                 <Filter className="h-4 w-4" />
             </Button>
         </div>
         <div className="text-sm text-muted-foreground">
-            Showing <strong>1-5</strong> of <strong>128</strong> customers
+            Showing <strong>{filteredCustomers.length}</strong> of <strong>{customers.length}</strong> customers
         </div>
       </div>
 
@@ -110,7 +107,23 @@ export default function Customers() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {customers.map((customer) => (
+                {loading ? (
+                    <TableRow>
+                        <TableCell colSpan={8} className="h-24 text-center">
+                            <div className="flex justify-center items-center">
+                                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                                Loading customers...
+                            </div>
+                        </TableCell>
+                    </TableRow>
+                ) : filteredCustomers.length === 0 ? (
+                    <TableRow>
+                        <TableCell colSpan={8} className="h-24 text-center">
+                            No customers found.
+                        </TableCell>
+                    </TableRow>
+                ) : (
+                    filteredCustomers.map((customer) => (
                     <TableRow key={customer.id}>
                         <TableCell>
                             <Avatar className="h-9 w-9">
@@ -149,7 +162,7 @@ export default function Customers() {
                             </Badge>
                         </TableCell>
                         <TableCell>{customer.orders}</TableCell>
-                        <TableCell>${customer.spent.toFixed(2)}</TableCell>
+                        <TableCell>£{customer.spent.toFixed(2)}</TableCell>
                         <TableCell>{customer.joinDate}</TableCell>
                         <TableCell className="text-right">
                             <DropdownMenu>
@@ -175,7 +188,7 @@ export default function Customers() {
                             </DropdownMenu>
                         </TableCell>
                     </TableRow>
-                ))}
+                )))}
             </TableBody>
         </Table>
       </div>

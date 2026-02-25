@@ -7,6 +7,44 @@ use Illuminate\Http\JsonResponse;
 
 class AdminCustomerController extends Controller
 {
+    public function index(): JsonResponse
+    {
+        $users = User::withCount('orders')
+            ->withSum('orders', 'total')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $customers = $users->map(function ($user) {
+            $lastOrder = $user->orders()->latest()->first();
+            $location = $lastOrder ? 
+                implode(', ', array_filter([$lastOrder->shipping_city, $lastOrder->shipping_country])) 
+                : 'Unknown';
+
+            $orderCount = $user->orders_count;
+            $status = 'Inactive';
+
+            if ($orderCount >= 10) {
+                $status = 'VIP';
+            } elseif ($orderCount > 0) {
+                $status = 'Active';
+            }
+
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone ?? 'N/A',
+                'location' => $location,
+                'orders' => $orderCount,
+                'spent' => (float) $user->orders_sum_total,
+                'status' => $status,
+                'joinDate' => $user->created_at->format('Y-m-d'),
+            ];
+        });
+
+        return response()->json($customers);
+    }
+
     public function show(User $user): JsonResponse
     {
         $orders = $user->orders()

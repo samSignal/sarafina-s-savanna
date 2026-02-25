@@ -14,14 +14,14 @@ import { toast } from "sonner";
 // Mock data
 const initialTiers = [
     { id: 1, name: "Bronze Member", minPoints: 0, multiplier: "1x", benefits: "Standard shipping", status: "Active", members: 1250 },
-    { id: 2, name: "Silver Member", minPoints: 1000, multiplier: "1.2x", benefits: "Free shipping on orders > $50", status: "Active", members: 450 },
+    { id: 2, name: "Silver Member", minPoints: 1000, multiplier: "1.2x", benefits: "Free shipping on orders > £50", status: "Active", members: 450 },
     { id: 3, name: "Gold Member", minPoints: 5000, multiplier: "1.5x", benefits: "Free priority shipping, Early access", status: "Active", members: 120 },
     { id: 4, name: "Platinum Member", minPoints: 10000, multiplier: "2x", benefits: "All benefits + Dedicated support", status: "Active", members: 25 },
 ];
 
 const initialRewards = [
-    { id: 1, name: "$5 Off Coupon", pointsCost: 500, type: "Discount", status: "Active", redemptions: 342 },
-    { id: 2, name: "$10 Off Coupon", pointsCost: 900, type: "Discount", status: "Active", redemptions: 156 },
+    { id: 1, name: "£5 Off Coupon", pointsCost: 500, type: "Discount", status: "Active", redemptions: 342 },
+    { id: 2, name: "£10 Off Coupon", pointsCost: 900, type: "Discount", status: "Active", redemptions: 156 },
     { id: 3, name: "Free Product Sample", pointsCost: 300, type: "Item", status: "Active", redemptions: 89 },
 ];
 

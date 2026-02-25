@@ -87,7 +87,7 @@ export default function GiftCards() {
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="value">Value ($)</Label>
+                                <Label htmlFor="value">Value (£)</Label>
                                 <Input 
                                     id="value" 
                                     type="number" 
@@ -131,7 +131,7 @@ export default function GiftCards() {
                         <Gift className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">${giftCards.reduce((acc, curr) => acc + curr.initialValue, 0).toFixed(2)}</div>
+                        <div className="text-2xl font-bold">£{giftCards.reduce((acc, curr) => acc + curr.initialValue, 0).toFixed(2)}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -140,7 +140,7 @@ export default function GiftCards() {
                         <Gift className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">${giftCards.reduce((acc, curr) => acc + curr.balance, 0).toFixed(2)}</div>
+                        <div className="text-2xl font-bold">£{giftCards.reduce((acc, curr) => acc + curr.balance, 0).toFixed(2)}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -189,8 +189,8 @@ export default function GiftCards() {
                             <TableRow key={card.id}>
                                 <TableCell className="font-mono font-medium">{card.code}</TableCell>
                                 <TableCell>{card.recipient}</TableCell>
-                                <TableCell>${card.initialValue.toFixed(2)}</TableCell>
-                                <TableCell>${card.balance.toFixed(2)}</TableCell>
+                                <TableCell>£{card.initialValue.toFixed(2)}</TableCell>
+                                <TableCell>£{card.balance.toFixed(2)}</TableCell>
                                 <TableCell>
                                     <Badge variant={
                                         card.status === "Active" ? "default" : 

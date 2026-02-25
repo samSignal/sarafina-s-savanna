@@ -49,6 +49,7 @@ class CheckoutController extends Controller
         }
 
         $total = 0;
+        $totalGbp = 0;
         $orderItemsData = [];
 
         foreach ($items as $item) {
@@ -69,6 +70,7 @@ class CheckoutController extends Controller
             $displayUnitPrice = $currency === 'GBP' ? $baseUnitPrice : $baseUnitPrice * $rate;
             $lineTotal = $displayUnitPrice * $quantity;
             $total += $lineTotal;
+            $totalGbp += $baseUnitPrice * $quantity;
 
             $orderItemsData[] = [
                 'product_id' => $product->id,
@@ -83,13 +85,15 @@ class CheckoutController extends Controller
             return response()->json(['message' => 'No valid cart items'], 422);
         }
 
-        $order = DB::transaction(function () use ($user, $total, $orderItemsData, $currency) {
+        $order = DB::transaction(function () use ($user, $total, $totalGbp, $rate, $orderItemsData, $currency) {
             $order = Order::create([
                 'user_id' => $user->id,
                 'order_number' => strtoupper(Str::random(10)),
                 'total' => $total,
                 'total_amount' => $total,
                 'currency' => $currency,
+                'exchange_rate' => $rate,
+                'total_gbp' => $totalGbp,
                 'status' => 'Pending',
                 'payment_status' => 'Pending',
             ]);

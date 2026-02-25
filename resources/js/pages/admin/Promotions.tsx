@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 // Mock data
 const initialPromotions = [
     { id: 1, code: "WELCOME20", type: "Percentage", value: 20, description: "20% off for new customers", usage: 145, status: "Active", startDate: "2024-01-01", endDate: "2024-12-31" },
-    { id: 2, code: "FREESHIP", type: "Fixed Amount", value: 0, description: "Free shipping on orders over $50", usage: 89, status: "Active", startDate: "2024-03-01", endDate: "2024-06-30" },
+    { id: 2, code: "FREESHIP", type: "Fixed Amount", value: 0, description: "Free shipping on orders over £50", usage: 89, status: "Active", startDate: "2024-03-01", endDate: "2024-06-30" },
     { id: 3, code: "SUMMER10", type: "Percentage", value: 10, description: "Summer sale discount", usage: 0, status: "Scheduled", startDate: "2024-06-01", endDate: "2024-08-31" },
     { id: 4, code: "FLASH50", type: "Percentage", value: 50, description: "Flash sale clearance", usage: 320, status: "Expired", startDate: "2024-02-14", endDate: "2024-02-15" },
 ];
@@ -107,7 +107,7 @@ export default function Promotions() {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="Percentage">Percentage (%)</SelectItem>
-                                            <SelectItem value="Fixed Amount">Fixed Amount ($)</SelectItem>
+                                            <SelectItem value="Fixed Amount">Fixed Amount (£)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -232,7 +232,7 @@ export default function Promotions() {
                                 </TableCell>
                                 <TableCell>
                                     <Badge variant="outline" className="bg-slate-50">
-                                        {promo.type === "Percentage" ? `${promo.value}% OFF` : `$${promo.value} OFF`}
+                                        {promo.type === "Percentage" ? `${promo.value}% OFF` : `£${promo.value} OFF`}
                                     </Badge>
                                 </TableCell>
                                 <TableCell>{promo.usage} uses</TableCell>

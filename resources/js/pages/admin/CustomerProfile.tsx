@@ -334,7 +334,7 @@ export default function CustomerProfile() {
                 <div className="flex items-center gap-2">
                   <Wallet className="h-4 w-4 text-muted-foreground" />
                   <span className="text-lg font-semibold">
-                    R {customer.total_spent.toFixed(2)}
+                    £{customer.total_spent.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -385,7 +385,7 @@ export default function CustomerProfile() {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Contribution</span>
                   <span>
-                    R{" "}
+                    £
                     {stokvel.contribution_amount
                       ? stokvel.contribution_amount.toFixed(2)
                       : "0.00"}
@@ -583,10 +583,10 @@ export default function CustomerProfile() {
                             {card.code}
                           </TableCell>
                           <TableCell>
-                            R {card.initial_value.toFixed(2)}
+                            £{card.initial_value.toFixed(2)}
                           </TableCell>
                           <TableCell>
-                            R {card.balance.toFixed(2)}
+                            £{card.balance.toFixed(2)}
                           </TableCell>
                           <TableCell>
                             <Badge
@@ -624,7 +624,7 @@ export default function CustomerProfile() {
                   <div>
                     Contribution amount:{" "}
                     {stokvel.contribution_amount
-                      ? `R ${stokvel.contribution_amount.toFixed(2)}`
+                      ? `£${stokvel.contribution_amount.toFixed(2)}`
                       : "Not set"}
                   </div>
                   <div>

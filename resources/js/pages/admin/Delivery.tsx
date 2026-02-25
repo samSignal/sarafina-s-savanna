@@ -199,7 +199,7 @@ export default function Delivery() {
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="grid gap-2">
-                                            <Label htmlFor="cost">Cost ($)</Label>
+                                            <Label htmlFor="cost">Cost (£)</Label>
                                             <Input 
                                                 id="cost" 
                                                 type="number"
@@ -244,7 +244,7 @@ export default function Delivery() {
                                     <TableRow key={method.id}>
                                         <TableCell className="font-medium">{method.name}</TableCell>
                                         <TableCell>{method.zone}</TableCell>
-                                        <TableCell>${method.cost.toFixed(2)}</TableCell>
+                                        <TableCell>£{method.cost.toFixed(2)}</TableCell>
                                         <TableCell>{method.time}</TableCell>
                                         <TableCell>
                                             <Badge variant={method.status === "Active" ? "default" : "secondary"}>

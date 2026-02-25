@@ -123,13 +123,6 @@ const MyOrders = () => {
     handle();
   }, [searchParams, setSearchParams, clearCart]);
 
-  const currentOrders = orders.filter((order) =>
-    ["Pending", "Processing", "Shipped"].includes(order.status)
-  );
-  const pastOrders = orders.filter((order) =>
-    ["Completed", "Cancelled"].includes(order.status)
-  );
-
   const formatDate = (value: string) =>
     new Date(value).toLocaleString(undefined, {
       dateStyle: "medium",
@@ -183,115 +176,59 @@ const MyOrders = () => {
           </div>
         ) : (
           <div className="space-y-10">
-            {currentOrders.length > 0 && (
-              <section className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">
-                    Current orders
-                  </h2>
-                </div>
-                <div className="space-y-3">
-                  {currentOrders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="border rounded-lg p-4 bg-card"
-                    >
-                      <div className="flex items-center justify-between gap-4 mb-2">
-                        <div>
-                          <p className="font-semibold">
-                            Order #{order.order_number}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Placed on {formatDate(order.created_at)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
-                            {currencySymbol(order.currency)}
-                            {Number(order.total).toFixed(2)}
-                          </p>
-                          <div className="flex gap-2 justify-end mt-1">
-                            <Badge variant="outline">
-                              {order.status}
-                            </Badge>
-                            <Badge variant="outline">
-                              Payment: {order.payment_status}
-                            </Badge>
-                          </div>
-                        </div>
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">
+                  Order history
+                </h2>
+              </div>
+              <div className="space-y-3">
+                {orders.map((order) => (
+                  <div
+                    key={order.id}
+                    className="border rounded-lg p-4 bg-card"
+                  >
+                    <div className="flex items-center justify-between gap-4 mb-2">
+                      <div>
+                        <p className="font-semibold">
+                          Order #{order.order_number}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Placed on {formatDate(order.created_at)}
+                        </p>
                       </div>
-                      <div className="mt-3 text-sm text-muted-foreground">
-                        {order.items.length === 1 ? (
-                          <span>
-                            {order.items[0].quantity} ×{" "}
-                            {order.items[0].product_name}
-                          </span>
-                        ) : (
-                          <span>
-                            {order.items.length} items in this order
-                          </span>
-                        )}
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          {currencySymbol(order.currency)}
+                          {Number(order.total).toFixed(2)}
+                        </p>
+                        <div className="flex gap-2 justify-end mt-1">
+                          <Badge variant="outline">
+                            {order.status}
+                          </Badge>
+                          <Badge variant="outline">
+                            Payment: {order.payment_status}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {pastOrders.length > 0 && (
-              <section className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-semibold">
-                    Order history
-                  </h2>
-                </div>
-                <div className="space-y-3">
-                  {pastOrders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="border rounded-lg p-4 bg-card"
-                    >
-                      <div className="flex items-center justify-between gap-4 mb-2">
-                        <div>
-                          <p className="font-semibold">
-                            Order #{order.order_number}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Placed on {formatDate(order.created_at)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
+                    <div className="mt-3 text-sm text-muted-foreground space-y-1">
+                      {order.items.map((item) => (
+                        <div key={item.id} className="flex justify-between">
+                          <span>
+                            {item.quantity} × {item.product_name}
+                          </span>
+                          <span>
                             {currencySymbol(order.currency)}
-                            {Number(order.total).toFixed(2)}
-                          </p>
-                          <div className="flex gap-2 justify-end mt-1">
-                            <Badge variant="outline">
-                              {order.status}
-                            </Badge>
-                            <Badge variant="outline">
-                              Payment: {order.payment_status}
-                            </Badge>
-                          </div>
+                            {Number(item.line_total).toFixed(2)}
+                          </span>
                         </div>
-                      </div>
-                      <div className="mt-3 text-sm text-muted-foreground">
-                        {order.items.length === 1 ? (
-                          <span>
-                            {order.items[0].quantity} ×{" "}
-                            {order.items[0].product_name}
-                          </span>
-                        ) : (
-                          <span>
-                            {order.items.length} items in this order
-                          </span>
-                        )}
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </section>
-            )}
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
         )}
       </main>

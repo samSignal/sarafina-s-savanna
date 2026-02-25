@@ -11,6 +11,7 @@ use App\Http\Controllers\ClientProfileController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\StripeWebhookController;
 use App\Http\Controllers\AdminCustomerController;
+use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\CurrencyController;
 
 Route::get('/user', function (Request $request) {
@@ -35,5 +36,8 @@ Route::get('client/profile', [ClientProfileController::class, 'show'])->middlewa
 Route::post('checkout/session', [CheckoutController::class, 'createSession'])->middleware('auth:sanctum');
 Route::post('checkout/confirm', [CheckoutController::class, 'confirmSession']);
 Route::post('stripe/webhook', [StripeWebhookController::class, 'handle']);
+Route::get('admin/customers', [AdminCustomerController::class, 'index'])->middleware('auth:sanctum');
 Route::get('admin/customers/{user}', [AdminCustomerController::class, 'show'])->middleware('auth:sanctum');
+Route::get('admin/orders', [AdminOrderController::class, 'index']);
+Route::get('admin/analytics', [App\Http\Controllers\AdminAnalyticsController::class, 'index']);
 Route::get('currencies', [CurrencyController::class, 'index']);
