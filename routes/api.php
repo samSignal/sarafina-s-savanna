@@ -57,3 +57,6 @@ Route::get('currencies', [CurrencyController::class, 'index']);
 Route::post('admin/loyalty/adjust/{user}', [AdminLoyaltyController::class, 'adjust'])->middleware('auth:sanctum');
 Route::get('admin/loyalty/transactions', [AdminLoyaltyController::class, 'index'])->middleware('auth:sanctum');
 Route::get('admin/loyalty/stats', [AdminLoyaltyController::class, 'stats'])->middleware('auth:sanctum');
+Route::get('admin/loyalty/settings', [AdminLoyaltyController::class, 'getSettings'])->middleware('auth:sanctum');
+Route::post('admin/loyalty/settings', [AdminLoyaltyController::class, 'updateSettings'])->middleware('auth:sanctum');
+Route::get('loyalty/settings', [AdminLoyaltyController::class, 'getSettings']);

@@ -137,8 +137,24 @@ const Cart = () => {
     : (subtotalIntl * selected.rate) + numericDeliveryCost;
 
   // Loyalty Calculation
+  const [loyaltyMaxPercent, setLoyaltyMaxPercent] = useState<number>(30);
+  const [loyaltyMinAmountGbp, setLoyaltyMinAmountGbp] = useState<number>(0);
+  useEffect(() => {
+    const fetchLoyaltySettings = async () => {
+      try {
+        const res = await fetch('/api/loyalty/settings');
+        if (res.ok) {
+          const data = await res.json();
+          setLoyaltyMaxPercent(Number(data.max_redemption_percentage));
+          setLoyaltyMinAmountGbp(Number(data.min_order_amount_gbp));
+        }
+      } catch {}
+    };
+    fetchLoyaltySettings();
+  }, []);
   const totalGbp = subtotalUk + (shippingMethod === 'delivery' ? deliveryCostGbp : 0);
-  const maxRedeemablePoints = Math.floor(totalGbp * 0.30 * 100);
+  const meetsMinAmount = totalGbp >= loyaltyMinAmountGbp;
+  const maxRedeemablePoints = Math.floor((meetsMinAmount ? totalGbp : 0) * (loyaltyMaxPercent / 100) * 100);
   const availablePoints = user?.points_balance || 0;
   const maxPoints = Math.min(maxRedeemablePoints, availablePoints);
 

@@ -21,6 +21,7 @@ class DepartmentFactory extends Factory
             'description' => fake()->sentence(),
             'status' => fake()->randomElement(['active', 'inactive']),
             'image' => fake()->imageUrl(),
+            'points_multiplier' => 0,
         ];
     }
 }

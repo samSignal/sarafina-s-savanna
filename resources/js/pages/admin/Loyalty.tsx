@@ -96,7 +96,7 @@ export default function Loyalty() {
 
     const handleEditRule = (dept: Department) => {
         setSelectedDept(dept);
-        setRuleMultiplier(dept.points_multiplier || "1.00");
+        setRuleMultiplier(dept.points_multiplier !== null && dept.points_multiplier !== undefined ? String(dept.points_multiplier) : "1.00");
         setRuleReason(dept.loyalty_reason || "");
         setEditRuleOpen(true);
     };
@@ -155,6 +155,47 @@ export default function Loyalty() {
         },
         enabled: !!token,
     });
+    const [maxPercent, setMaxPercent] = useState("");
+    const [minAmount, setMinAmount] = useState("");
+    const [savingSettings, setSavingSettings] = useState(false);
+    const fetchSettings = async () => {
+        try {
+            const res = await fetch("/api/admin/loyalty/settings", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setMaxPercent(String(data.max_redemption_percentage));
+                setMinAmount(String(data.min_order_amount_gbp));
+            }
+        } catch {}
+    };
+    if (token && !maxPercent && !minAmount) {
+        fetchSettings();
+    }
+    const saveSettings = async () => {
+        setSavingSettings(true);
+        try {
+            const res = await fetch("/api/admin/loyalty/settings", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    max_redemption_percentage: parseFloat(maxPercent || "0"),
+                    min_order_amount_gbp: parseFloat(minAmount || "0"),
+                }),
+            });
+            if (res.ok) {
+                toast.success("Redemption settings updated");
+            } else {
+                toast.error("Failed to update redemption settings");
+            }
+        } finally {
+            setSavingSettings(false);
+        }
+    };
 
     const fetchCustomers = async () => {
         if (customers.length > 0) return;
@@ -377,6 +418,45 @@ export default function Loyalty() {
             <TabsContent value="rules" className="space-y-4">
                 <Card>
                     <CardHeader>
+                        <CardTitle>Redemption Rules</CardTitle>
+                        <CardDescription>Control when and how many points can be used.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="grid gap-2">
+                                <Label htmlFor="max_percent">Max percentage paid using points</Label>
+                                <Input
+                                    id="max_percent"
+                                    type="number"
+                                    step="1"
+                                    min="0"
+                                    max="100"
+                                    value={maxPercent}
+                                    onChange={(e) => setMaxPercent(e.target.value)}
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="min_amount">Minimum order amount (GBP) to allow redemption</Label>
+                                <Input
+                                    id="min_amount"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={minAmount}
+                                    onChange={(e) => setMinAmount(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="mt-4 flex justify-end">
+                            <Button onClick={saveSettings} disabled={savingSettings}>
+                                {savingSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Save Settings
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
                         <CardTitle>Points Multiplier by Department</CardTitle>
                         <CardDescription>
                             Configure how many points customers earn per £1 spent in each department.
@@ -397,9 +477,9 @@ export default function Loyalty() {
                                 {departments?.map((dept) => (
                                     <TableRow key={dept.id}>
                                         <TableCell className="font-medium">{dept.name}</TableCell>
-                                        <TableCell>{(parseFloat(dept.points_multiplier || "1.00") * 1).toFixed(0)} points</TableCell>
+                                        <TableCell>{(parseFloat(dept.points_multiplier !== null && dept.points_multiplier !== undefined ? String(dept.points_multiplier) : "1.00") * 1).toFixed(0)} points</TableCell>
                                         <TableCell>
-                                            <Badge variant="outline">{dept.points_multiplier || "1.00"}x</Badge>
+                                            <Badge variant="outline">{dept.points_multiplier !== null && dept.points_multiplier !== undefined ? dept.points_multiplier : "1.00"}x</Badge>
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">{dept.loyalty_reason || "-"}</TableCell>
                                         <TableCell>

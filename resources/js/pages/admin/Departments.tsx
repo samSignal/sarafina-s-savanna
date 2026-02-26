@@ -16,7 +16,7 @@ export default function Departments() {
     const [searchQuery, setSearchQuery] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentDept, setCurrentDept] = useState<{ id: number | null; name: string; description: string; status: string; image: string; points_multiplier: string; loyalty_reason: string }>({ id: null, name: "", description: "", status: "Active", image: "", points_multiplier: "1.00", loyalty_reason: "" });
+    const [currentDept, setCurrentDept] = useState<{ id: number | null; name: string; description: string; status: string; image: string; points_multiplier: string; loyalty_reason: string }>({ id: null, name: "", description: "", status: "Active", image: "", points_multiplier: "0", loyalty_reason: "" });
     const [imageFile, setImageFile] = useState<File | null>(null);
 
     useEffect(() => {
@@ -48,12 +48,12 @@ export default function Departments() {
             setCurrentDept({ 
                 ...dept,
                 image: dept.image || "",
-                points_multiplier: dept.points_multiplier || "1.00",
+                points_multiplier: dept.points_multiplier !== null && dept.points_multiplier !== undefined ? String(dept.points_multiplier) : "1.00",
                 loyalty_reason: dept.loyalty_reason || ""
             });
         } else {
             setIsEditing(false);
-            setCurrentDept({ id: null, name: "", description: "", status: "Active", image: "", points_multiplier: "1.00", loyalty_reason: "" });
+            setCurrentDept({ id: null, name: "", description: "", status: "Active", image: "", points_multiplier: "0", loyalty_reason: "" });
         }
         setImageFile(null);
         setIsDialogOpen(true);

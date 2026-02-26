@@ -63,7 +63,7 @@ class DepartmentController extends Controller
             $validated['image'] = '/storage/' . $path;
         }
 
-        $validated['points_multiplier'] = $validated['points_multiplier'] ?? 1.00;
+        $validated['points_multiplier'] = $validated['points_multiplier'] ?? 0;
 
         unset($validated['image_file']);
 

@@ -195,16 +195,18 @@ class LoyaltyService
      */
     public function calculateMaxRedemption(float $orderTotalGBP, int $userPointsBalance): array
     {
-        // Max value in GBP allowed to be paid by points
-        $maxRedemptionValueGBP = $orderTotalGBP * 0.30;
+        $setting = \App\Models\LoyaltySetting::first();
+        $percentage = $setting ? ((float) $setting->max_redemption_percentage / 100.0) : 0.30;
+        $minAmount = $setting ? (float) $setting->min_order_amount_gbp : 0.0;
+        if ($orderTotalGBP < $minAmount) {
+            return ['points' => 0, 'value' => 0.00];
+        }
+        $maxRedemptionValueGBP = $orderTotalGBP * $percentage;
 
-        // Convert max value to points (1 GBP = 100 Points)
         $maxRedemptionPoints = $maxRedemptionValueGBP * 100;
 
-        // Limit by user balance
         $allowedPoints = min($maxRedemptionPoints, $userPointsBalance);
         
-        // Value of allowed points
         $allowedValueGBP = $allowedPoints / 100;
 
         return [

@@ -133,9 +133,13 @@ class CheckoutController extends Controller
                 return response()->json(['message' => 'Insufficient points balance'], 422);
             }
 
-            // Max redemption: 30% of Order Total (GBP)
-            // 1 Point = £0.01 (100 Points = £1)
-            $maxPoints = floor($totalGbp * 0.30 * 100);
+            $loyaltySetting = \App\Models\LoyaltySetting::first();
+            $percentage = $loyaltySetting ? ((float) $loyaltySetting->max_redemption_percentage / 100.0) : 0.30;
+            $minAmount = $loyaltySetting ? (float) $loyaltySetting->min_order_amount_gbp : 0.0;
+            if ($totalGbp < $minAmount) {
+                return response()->json(['message' => 'Order amount is below the minimum required to redeem points'], 422);
+            }
+            $maxPoints = floor($totalGbp * $percentage * 100);
             
             if ($pointsRedeemed > $maxPoints) {
                 return response()->json(['message' => "Points redemption exceeds limit. Max allowed: {$maxPoints}"], 422);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\LoyaltyTransaction;
+use App\Models\LoyaltySetting;
 use App\Services\LoyaltyService;
 use Illuminate\Http\Request;
 
@@ -44,5 +45,27 @@ class AdminLoyaltyController extends Controller
             'message' => 'Points adjusted successfully', 
             'balance' => $user->fresh()->points_balance
         ]);
+    }
+
+    public function getSettings()
+    {
+        $setting = LoyaltySetting::firstOrCreate(
+            ['id' => 1],
+            ['max_redemption_percentage' => 30.00, 'min_order_amount_gbp' => 0.00]
+        );
+        return response()->json($setting);
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'max_redemption_percentage' => 'required|numeric|min:0|max:100',
+            'min_order_amount_gbp' => 'required|numeric|min:0',
+        ]);
+
+        $setting = LoyaltySetting::firstOrCreate(['id' => 1]);
+        $setting->update($validated);
+
+        return response()->json($setting);
     }
 }
