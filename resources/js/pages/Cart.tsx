@@ -34,7 +34,7 @@ const Cart = () => {
   const [syncing, setSyncing] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { format, convert, selected } = useCurrency();
-  const [pointsRedeemed, setPointsRedeemed] = useState(0);
+  const [pointsRedeemed, setPointsRedeemed] = useState<number | string>(0);
 
   // Checkout State
   const [shippingMethod, setShippingMethod] = useState<"collection" | "delivery">("collection");
@@ -142,7 +142,8 @@ const Cart = () => {
   const availablePoints = user?.points_balance || 0;
   const maxPoints = Math.min(maxRedeemablePoints, availablePoints);
 
-  const discountValueGbp = pointsRedeemed / 100;
+  const appliedPoints = typeof pointsRedeemed === 'string' ? 0 : pointsRedeemed;
+  const discountValueGbp = appliedPoints / 100;
   const discountValue = selected.code === 'GBP' ? discountValueGbp : discountValueGbp * selected.rate;
   const finalTotal = Math.max(0, totalDisplay - discountValue);
 
@@ -201,7 +202,7 @@ const Cart = () => {
           contact_person: contactPerson,
           contact_phone: contactPhone,
           shipping_address: shippingMethod === 'delivery' ? shippingAddress : null,
-          points_redeemed: pointsRedeemed,
+          points_redeemed: appliedPoints,
         }),
       });
 
@@ -505,13 +506,20 @@ const Cart = () => {
                               max={maxPoints}
                               value={pointsRedeemed}
                               onChange={(e) => {
-                                  const val = parseInt(e.target.value) || 0;
-                                  setPointsRedeemed(Math.min(val, maxPoints));
+                                  const valStr = e.target.value;
+                                  if (valStr === '') {
+                                      setPointsRedeemed('');
+                                      return;
+                                  }
+                                  const val = parseInt(valStr);
+                                  if (!isNaN(val)) {
+                                      setPointsRedeemed(Math.min(val, maxPoints));
+                                  }
                               }}
                               className="h-8"
                           />
                       </div>
-                      {pointsRedeemed > 0 && (
+                      {appliedPoints > 0 && (
                           <div className="flex justify-between text-green-600 font-medium text-sm">
                               <span>Discount</span>
                               <span>-{selected.symbol}{discountValue.toFixed(2)}</span>
