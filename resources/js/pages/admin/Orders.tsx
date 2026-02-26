@@ -40,6 +40,9 @@ interface AdminOrder {
   currency: string;
   exchange_rate: number;
   total_gbp: number;
+  delivery_cost: number;
+  points_redeemed: number;
+  discount_amount: number;
   created_at: string;
   customer_id: number | null;
   customer_name: string | null;
@@ -360,6 +363,28 @@ export default function Orders() {
                                       </TableCell>
                                     </TableRow>
                                   ))}
+                                  <TableRow>
+                                    <TableCell colSpan={order.currency !== 'GBP' ? 4 : 3} className="text-right text-muted-foreground">Subtotal</TableCell>
+                                    <TableCell className="text-right">
+                                      {currencySymbol(order.currency)}{(order.total - (order.delivery_cost || 0) + (order.discount_amount || 0)).toFixed(2)}
+                                    </TableCell>
+                                  </TableRow>
+                                  {order.shipping_method === 'delivery' && (order.delivery_cost || 0) > 0 && (
+                                    <TableRow>
+                                      <TableCell colSpan={order.currency !== 'GBP' ? 4 : 3} className="text-right text-muted-foreground">Delivery</TableCell>
+                                      <TableCell className="text-right">
+                                        {currencySymbol(order.currency)}{(order.delivery_cost || 0).toFixed(2)}
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                  {(order.discount_amount || 0) > 0 && (
+                                    <TableRow>
+                                      <TableCell colSpan={order.currency !== 'GBP' ? 4 : 3} className="text-right text-green-700">Loyalty Discount</TableCell>
+                                      <TableCell className="text-right text-green-700">
+                                        -{currencySymbol(order.currency)}{(order.discount_amount || 0).toFixed(2)}
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
                                   <TableRow className="bg-slate-50 font-medium">
                                     <TableCell colSpan={order.currency !== 'GBP' ? 4 : 3} className="text-right">Total</TableCell>
                                     <TableCell className="text-right">
@@ -382,6 +407,12 @@ export default function Orders() {
                                   <p>{order.shipping_address.city}, {order.shipping_address.postcode}</p>
                                   <p>{order.shipping_address.country}</p>
                                 </div>
+                                {(order.points_redeemed || 0) > 0 && (
+                                  <div className="pt-3 text-sm">
+                                    <span className="font-medium">Loyalty:</span>{" "}
+                                    <span className="text-muted-foreground">{order.points_redeemed} points redeemed</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
 

@@ -55,6 +55,9 @@ class AdminOrderController extends Controller
                     'currency' => $order->currency,
                     'exchange_rate' => $rate,
                     'total_gbp' => (float) $order->total_gbp,
+                    'delivery_cost' => (float) $order->delivery_cost,
+                    'points_redeemed' => (int) ($order->points_redeemed ?? 0),
+                    'discount_amount' => (float) ($order->discount_amount ?? 0),
                     'created_at' => $order->created_at,
                     'customer_id' => $order->user?->id,
                     'customer_name' => $order->user?->name,
@@ -96,4 +99,3 @@ class AdminOrderController extends Controller
         return response()->json(['message' => 'Order status updated']);
     }
 }
-
