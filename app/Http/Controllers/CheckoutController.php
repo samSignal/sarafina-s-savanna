@@ -232,8 +232,23 @@ class CheckoutController extends Controller
             ];
         }
 
+        $discounts = [];
+        if ($discountAmount > 0) {
+            try {
+                $coupon = Coupon::create([
+                    'name' => 'Sarafina savings.',
+                    'amount_off' => (int) round($discountAmount * 100),
+                    'currency' => strtolower($currency),
+                    'duration' => 'once',
+                ]);
+                $discounts = [['coupon' => $coupon->id]];
+            } catch (\Throwable $e) {
+                // If coupon creation fails, proceed without Stripe-level discount
+            }
+        }
+
         try {
-            $session = StripeSession::create([
+            $params = [
                 'mode' => 'payment',
                 'line_items' => $lineItems,
                 'customer_email' => $user->email,
@@ -244,7 +259,11 @@ class CheckoutController extends Controller
                     'order_number' => $order->order_number,
                     'user_id' => $user->id,
                 ],
-            ]);
+            ];
+            if (! empty($discounts)) {
+                $params['discounts'] = $discounts;
+            }
+            $session = StripeSession::create($params);
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => 'Stripe error: ' . $e->getMessage(),
