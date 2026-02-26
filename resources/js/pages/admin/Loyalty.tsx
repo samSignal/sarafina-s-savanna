@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, TrendingUp, TrendingDown, Clock, AlertCircle, Plus, Check, ChevronsUpDown } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Clock, AlertCircle, Plus, Check, ChevronsUpDown, Info, BookOpen } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface LoyaltyStats {
@@ -84,6 +85,7 @@ export default function Loyalty() {
     const [ruleMultiplier, setRuleMultiplier] = useState("");
     const [ruleReason, setRuleReason] = useState("");
     const [savingRule, setSavingRule] = useState(false);
+    const [guideOpen, setGuideOpen] = useState(false);
 
     const { data: departments, refetch: refetchDepartments } = useQuery<Department[]>({
         queryKey: ["admin-departments"],
@@ -279,12 +281,18 @@ export default function Loyalty() {
                     <h1 className="text-3xl font-bold tracking-tight">Loyalty Program</h1>
                     <p className="text-muted-foreground">Monitor loyalty points, transactions, and program health.</p>
                 </div>
-                <Button onClick={() => {
-                    setAdjustOpen(true);
-                    fetchCustomers();
-                }}>
-                    <Plus className="mr-2 h-4 w-4" /> Adjust Points
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setGuideOpen(true)}>
+                        <BookOpen className="mr-2 h-4 w-4" />
+                        Guide
+                    </Button>
+                    <Button onClick={() => {
+                        setAdjustOpen(true);
+                        fetchCustomers();
+                    }}>
+                        <Plus className="mr-2 h-4 w-4" /> Adjust Points
+                    </Button>
+                </div>
             </div>
 
             <Tabs defaultValue="overview" className="space-y-4">
@@ -418,33 +426,83 @@ export default function Loyalty() {
             <TabsContent value="rules" className="space-y-4">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Redemption Rules</CardTitle>
+                        <CardTitle className="flex items-center gap-2">
+                            Redemption Rules
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <Info className="h-4 w-4 text-muted-foreground" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p className="w-[300px]">Control how customers can spend their points.</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        </CardTitle>
                         <CardDescription>Control when and how many points can be used.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-4 md:grid-cols-2">
                             <div className="grid gap-2">
-                                <Label htmlFor="max_percent">Max percentage paid using points</Label>
-                                <Input
-                                    id="max_percent"
-                                    type="number"
-                                    step="1"
-                                    min="0"
-                                    max="100"
-                                    value={maxPercent}
-                                    onChange={(e) => setMaxPercent(e.target.value)}
-                                />
+                                <Label htmlFor="max_percent" className="flex items-center gap-2">
+                                    Max percentage paid using points
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <Info className="h-3 w-3 text-muted-foreground" />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p className="w-[300px]">The maximum portion of an order's subtotal that can be covered by points. E.g., 30% means a £100 order can use up to £30 worth of points.</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </Label>
+                                <div className="relative">
+                                    <Input
+                                        id="max_percent"
+                                        type="number"
+                                        step="1"
+                                        min="0"
+                                        max="100"
+                                        value={maxPercent}
+                                        onChange={(e) => setMaxPercent(e.target.value)}
+                                        className="pr-8"
+                                    />
+                                    <span className="absolute right-3 top-2.5 text-sm text-muted-foreground">%</span>
+                                </div>
+                                <p className="text-[0.8rem] text-muted-foreground">
+                                    Limits how much discount can be applied per order.
+                                </p>
                             </div>
                             <div className="grid gap-2">
-                                <Label htmlFor="min_amount">Minimum order amount (GBP) to allow redemption</Label>
-                                <Input
-                                    id="min_amount"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    value={minAmount}
-                                    onChange={(e) => setMinAmount(e.target.value)}
-                                />
+                                <Label htmlFor="min_amount" className="flex items-center gap-2">
+                                    Minimum order amount to allow redemption
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <Info className="h-3 w-3 text-muted-foreground" />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p className="w-[300px]">Customers must spend at least this amount (subtotal) before they can redeem any points.</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </Label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">£</span>
+                                    <Input
+                                        id="min_amount"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={minAmount}
+                                        onChange={(e) => setMinAmount(e.target.value)}
+                                        className="pl-7"
+                                    />
+                                </div>
+                                <p className="text-[0.8rem] text-muted-foreground">
+                                    Set a threshold to prevent point usage on small orders.
+                                </p>
                             </div>
                         </div>
                         <div className="mt-4 flex justify-end">
@@ -463,11 +521,37 @@ export default function Loyalty() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
+                        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6 flex gap-3">
+                            <Info className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
+                            <div className="text-sm text-blue-700 space-y-1">
+                                <p className="font-medium">How Multipliers Work:</p>
+                                <ul className="list-disc list-inside space-y-1 ml-1">
+                                    <li><strong>1.00x (Standard):</strong> Customers earn 1 point for every £1 spent.</li>
+                                    <li><strong>0.00x (No Points):</strong> Customers earn 0 points for items in this department.</li>
+                                    <li><strong>2.00x (Double Points):</strong> Customers earn 2 points per £1. Useful for promotions!</li>
+                                </ul>
+                            </div>
+                        </div>
+
                         <Table>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Department</TableHead>
-                                    <TableHead>Points per £1</TableHead>
+                                    <TableHead>
+                                        <div className="flex items-center gap-1">
+                                            Points per £1
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <Info className="h-3 w-3 text-muted-foreground" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Calculated based on the multiplier (1 pt x Multiplier)</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    </TableHead>
                                     <TableHead>Multiplier</TableHead>
                                     <TableHead>Reason</TableHead>
                                     <TableHead className="w-[50px]"></TableHead>
@@ -594,6 +678,69 @@ export default function Loyalty() {
                                 "Confirm Adjustment"
                             )}
                         </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Loyalty Program Guide</DialogTitle>
+                        <DialogDescription>
+                            Everything you need to know about managing customer loyalty.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6 py-4">
+                        <div className="space-y-2">
+                            <h3 className="font-semibold flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4 text-green-600" /> Earning Points
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                                Customers automatically earn points when they complete a purchase.
+                                The default rate is <strong className="text-foreground">1 point per £1 spent</strong>.
+                                You can customize this rate for specific departments in the <strong>Earning Rules</strong> tab (e.g., offering Double Points for promotions).
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h3 className="font-semibold flex items-center gap-2">
+                                <TrendingDown className="h-4 w-4 text-purple-600" /> Redeeming Points
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                                Customers can use their points at checkout to get a discount.
+                                <br />
+                                <strong className="text-foreground">100 Points = £1.00 Discount</strong>
+                            </p>
+                            <div className="bg-muted/50 p-3 rounded-md text-sm">
+                                <p className="font-medium mb-1">Redemption Limits:</p>
+                                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                                    <li><strong>Max Percentage:</strong> Limits how much of the order total can be paid with points (e.g., 30%).</li>
+                                    <li><strong>Min Order Amount:</strong> Requires the customer to spend a minimum amount before they can use points.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                                <h3 className="font-semibold flex items-center gap-2">
+                                    <Plus className="h-4 w-4 text-blue-600" /> Manual Adjustments
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Use the <strong>Adjust Points</strong> button to manually add or remove points for a customer (e.g., for refunds, complaints, or goodwill bonuses).
+                                </p>
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="font-semibold flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-red-600" /> Expiration
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                    Points will automatically expire if a customer is inactive (no purchases) for <strong>12 months</strong>.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={() => setGuideOpen(false)}>Close Guide</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
