@@ -1,8 +1,34 @@
 import { Facebook, Instagram, Mail, Phone, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 
 export const Footer = () => {
+  const [departments, setDepartments] = useState<{name: string, id: number}[]>([]);
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch('/api/public/departments');
+        if (response.ok) {
+          const data = await response.json();
+          const activeDepts = data
+            .filter((d: any) => d.status === 'Active')
+            .map((d: any) => ({
+              name: d.name,
+              id: d.id,
+            }))
+            .slice(0, 5); // Limit to 5 items
+          setDepartments(activeDepts);
+        }
+      } catch (error) {
+        console.error("Failed to load departments for footer", error);
+      }
+    };
+    fetchDepartments();
+  }, []);
+
   return (
     <footer className="bg-brand-charcoal text-primary-foreground">
       {/* Newsletter */}
@@ -81,11 +107,16 @@ export const Footer = () => {
             <div>
               <h4 className="font-display text-lg font-semibold mb-6">Quick Links</h4>
               <ul className="space-y-3">
-                {["Shop All", "Fresh Meat", "Spices", "Drinks", "Fresh Produce", "Clearance"].map((link) => (
-                  <li key={link}>
-                    <a href="#" className="text-primary-foreground/70 hover:text-secondary transition-colors">
-                      {link}
-                    </a>
+                <li>
+                  <Link to="/shop" className="text-primary-foreground/70 hover:text-secondary transition-colors">
+                    Shop All
+                  </Link>
+                </li>
+                {departments.map((dept) => (
+                  <li key={dept.id}>
+                    <Link to={`/category/${dept.id}`} className="text-primary-foreground/70 hover:text-secondary transition-colors">
+                      {dept.name}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -95,11 +126,18 @@ export const Footer = () => {
             <div>
               <h4 className="font-display text-lg font-semibold mb-6">Customer Service</h4>
               <ul className="space-y-3">
-                {["Contact Us", "FAQs", "Shipping & Delivery", "Returns Policy", "Terms & Conditions", "Privacy Policy"].map((link) => (
-                  <li key={link}>
-                    <a href="#" className="text-primary-foreground/70 hover:text-secondary transition-colors">
-                      {link}
-                    </a>
+                {[
+                  { name: "Contact Us", href: "/contact" },
+                  { name: "FAQs", href: "/faq" },
+                  { name: "Shipping & Delivery", href: "/shipping-policy" },
+                  { name: "Returns Policy", href: "/returns-policy" },
+                  { name: "Terms & Conditions", href: "/terms" },
+                  { name: "Privacy Policy", href: "/privacy" },
+                ].map((link) => (
+                  <li key={link.name}>
+                    <Link to={link.href} className="text-primary-foreground/70 hover:text-secondary transition-colors">
+                      {link.name}
+                    </Link>
                   </li>
                 ))}
               </ul>

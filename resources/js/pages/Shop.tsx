@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useSearchParams } from "react-router-dom";
 
 interface Product {
   id: number;
@@ -26,6 +27,8 @@ const Shop = () => {
   const [quantities, setQuantities] = useState<Record<number, number>>({});
   const { addItem } = useCart();
   const { format } = useCurrency();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get("search") || "";
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -44,6 +47,16 @@ const Shop = () => {
 
     fetchProducts();
   }, []);
+
+  const filteredProducts = useMemo(() => {
+    if (!searchQuery) return products;
+    const lowerQuery = searchQuery.toLowerCase();
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(lowerQuery) ||
+        p.description.toLowerCase().includes(lowerQuery)
+    );
+  }, [products, searchQuery]);
 
   const getQuantity = (productId: number) => {
     return quantities[productId] ?? 1;
@@ -74,10 +87,12 @@ const Shop = () => {
         <div className="bg-muted py-12 md:py-16">
           <div className="container text-center">
             <h1 className="text-4xl md:text-5xl font-display font-bold text-primary mb-4">
-              Shop All
+              {searchQuery ? `Results for "${searchQuery}"` : "Shop All"}
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Browse our complete collection of authentic African products.
+              {searchQuery
+                ? `Found ${filteredProducts.length} items matching your search`
+                : "Browse our complete collection of authentic African products."}
             </p>
           </div>
         </div>
@@ -89,9 +104,9 @@ const Shop = () => {
                 <Skeleton key={i} className="h-80 w-full rounded-xl" />
               ))}
             </div>
-          ) : products.length > 0 ? (
+          ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <div 
                   key={product.id} 
                   className="group bg-card rounded-xl border overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col"
@@ -191,8 +206,11 @@ const Shop = () => {
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>No products found.</p>
+            <div className="text-center py-12">
+              <h3 className="text-xl font-semibold mb-2">No products found</h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search terms or browse our categories.
+              </p>
             </div>
           )}
         </div>

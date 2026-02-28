@@ -13,6 +13,7 @@ import GiftCardPurchase from "./pages/GiftCardPurchase";
 import MyOrders from "./pages/MyOrders";
 import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
+import InfoPage from "./pages/InfoPage";
 import AdminLayout from "./components/layouts/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import Products from "./pages/admin/Products";
@@ -50,6 +51,13 @@ const App = () => (
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/account" element={<Account />} />
           
+          <Route path="/contact" element={<InfoPage />} />
+          <Route path="/faq" element={<InfoPage />} />
+          <Route path="/shipping-policy" element={<InfoPage />} />
+          <Route path="/returns-policy" element={<InfoPage />} />
+          <Route path="/terms" element={<InfoPage />} />
+          <Route path="/privacy" element={<InfoPage />} />
+
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="products" element={<Products />} />

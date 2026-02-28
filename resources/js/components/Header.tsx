@@ -15,6 +15,7 @@ export const Header = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const { totalItems } = useCart();
   const { currencies, selected, setCurrency } = useCurrency();
+  const [searchQuery, setSearchQuery] = useState("");
   const [navItems, setNavItems] = useState([
     { label: "Home", href: "/" },
     { label: "Shop All", href: "/shop", highlight: true },
@@ -66,6 +67,14 @@ export const Header = () => {
     fetchDepartments();
   }, []);
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
+      setIsSearchOpen(false);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-background shadow-soft">
       {/* Top bar */}
@@ -94,13 +103,15 @@ export const Header = () => {
 
           {/* Search bar - Desktop */}
           <div className="hidden md:flex flex-1 max-w-xl mx-8">
-            <div className="relative w-full">
+            <form onSubmit={handleSearch} className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 placeholder="Search for African foods, spices, drinks..."
                 className="pl-10 pr-4 py-6 bg-muted border-0 focus-visible:ring-2 focus-visible:ring-primary"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-            </div>
+            </form>
           </div>
 
           <div className="flex items-center gap-3">
@@ -189,15 +200,17 @@ export const Header = () => {
               exit={{ height: 0, opacity: 0 }}
               className="md:hidden overflow-hidden"
             >
-              <div className="pt-4">
+              <form onSubmit={handleSearch} className="pt-4">
                 <div className="relative w-full">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <Input
                     placeholder="Search for African foods..."
                     className="pl-10 pr-4 py-3 bg-muted border-0"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-              </div>
+              </form>
             </motion.div>
           )}
         </AnimatePresence>
