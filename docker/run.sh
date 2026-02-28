@@ -2,6 +2,10 @@
 
 cd /var/www/html
 
+# Link storage
+php artisan storage:link
+
+
 # Run migrations
 php artisan migrate --force
 
