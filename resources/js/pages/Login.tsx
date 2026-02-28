@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { toast } from "sonner";
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -26,7 +27,8 @@ const Login = () => {
       setSubmitting(true);
       await login(email, password);
       toast.success("Signed in successfully");
-      navigate("/");
+      const redirect = searchParams.get("redirect");
+      navigate(redirect || "/");
     } catch {
       toast.error("Invalid email or password");
     } finally {

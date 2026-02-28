@@ -1,9 +1,11 @@
+import { useEffect } from "react"
 import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar"
 import { LayoutDashboard, Package, ShoppingCart, Settings, LogOut, User, Bell, Shield, Users, FolderTree, Award, RefreshCcw, Gift, Tag, Truck, Layers, ClipboardList, TrendingUp } from "lucide-react"
-import { Outlet, Link, useLocation } from "react-router-dom"
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useAuth } from "@/contexts/AuthContext"
 
 const items = [
   {
@@ -85,6 +87,24 @@ const items = [
 
 export default function AdminLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { loading, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!isAuthenticated) {
+      const redirect = encodeURIComponent(location.pathname + location.search);
+      navigate(`/login?redirect=${redirect}`, { replace: true });
+    }
+  }, [loading, isAuthenticated, location.pathname, location.search, navigate]);
+
+  if (loading) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <SidebarProvider>

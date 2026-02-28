@@ -16,6 +16,7 @@ use App\Http\Controllers\AdminDeliveryController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\AdminLoyaltyController;
 use App\Http\Controllers\AdminGiftCardController;
+use App\Http\Controllers\AdminSettingsController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -61,6 +62,8 @@ Route::get('admin/loyalty/stats', [AdminLoyaltyController::class, 'stats'])->mid
 Route::get('admin/loyalty/settings', [AdminLoyaltyController::class, 'getSettings'])->middleware('auth:sanctum');
 Route::post('admin/loyalty/settings', [AdminLoyaltyController::class, 'updateSettings'])->middleware('auth:sanctum');
 Route::get('loyalty/settings', [AdminLoyaltyController::class, 'getSettings']);
+Route::get('general/settings', [AdminSettingsController::class, 'getSettings']);
+Route::post('admin/general/settings', [AdminSettingsController::class, 'updateSettings'])->middleware('auth:sanctum');
 Route::get('gift-cards/products', [App\Http\Controllers\GiftCardController::class, 'products']);
 Route::post('gift-cards/validate', [App\Http\Controllers\GiftCardController::class, 'validateCard'])->middleware('throttle:10,1');
 Route::get('client/gift-cards/{id}/transactions', [App\Http\Controllers\GiftCardController::class, 'transactions'])->middleware('auth:sanctum');

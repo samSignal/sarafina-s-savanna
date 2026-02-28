@@ -6,6 +6,7 @@ import { Link } from "react-router-dom";
 
 export const Footer = () => {
   const [departments, setDepartments] = useState<{name: string, id: number}[]>([]);
+  const [settings, setSettings] = useState<any>(null);
 
   useEffect(() => {
     const fetchDepartments = async () => {
@@ -26,7 +27,21 @@ export const Footer = () => {
         console.error("Failed to load departments for footer", error);
       }
     };
+
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/general/settings');
+        if (response.ok) {
+          const data = await response.json();
+          setSettings(data);
+        }
+      } catch (error) {
+        console.error("Failed to load settings for footer", error);
+      }
+    };
+
     fetchDepartments();
+    fetchSettings();
   }, []);
 
   return (
@@ -78,28 +93,34 @@ export const Footer = () => {
                 Your trusted bridge to Zimbabwe. Shop online from anywhere in the world and we'll deliver fresh, quality groceries to your loved ones back home.
               </p>
               <div className="flex gap-4">
-                <a href="https://www.facebook.com/share/g/1aVTavof8R/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-primary-foreground/10 hover:bg-secondary rounded-full flex items-center justify-center transition-colors">
-                  <Facebook className="w-5 h-5" />
-                </a>
-                <a href="https://www.instagram.com/sarafinafoods?igsh=MWwxanpvZDU3MGZ6cA%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-primary-foreground/10 hover:bg-secondary rounded-full flex items-center justify-center transition-colors">
-                  <Instagram className="w-5 h-5" />
-                </a>
-                <a href="https://www.tiktok.com/@sarafinafoods?_r=1&_t=ZN-94CSVlThI1u" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-primary-foreground/10 hover:bg-secondary rounded-full flex items-center justify-center transition-colors">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="20" 
-                    height="20" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className="w-5 h-5"
-                  >
-                    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
-                  </svg>
-                </a>
+                {settings?.facebook_url && (
+                  <a href={settings.facebook_url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-primary-foreground/10 hover:bg-secondary rounded-full flex items-center justify-center transition-colors">
+                    <Facebook className="w-5 h-5" />
+                  </a>
+                )}
+                {settings?.instagram_url && (
+                  <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-primary-foreground/10 hover:bg-secondary rounded-full flex items-center justify-center transition-colors">
+                    <Instagram className="w-5 h-5" />
+                  </a>
+                )}
+                {settings?.tiktok_url && (
+                  <a href={settings.tiktok_url} target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-primary-foreground/10 hover:bg-secondary rounded-full flex items-center justify-center transition-colors">
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      width="20" 
+                      height="20" 
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      className="w-5 h-5"
+                    >
+                      <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+                    </svg>
+                  </a>
+                )}
               </div>
             </div>
 
@@ -129,7 +150,7 @@ export const Footer = () => {
                 {[
                   { name: "Contact Us", href: "/contact" },
                   { name: "FAQs", href: "/faq" },
-                  { name: "Shipping & Delivery", href: "/shipping-policy" },
+                  { name: "Delivery Policy", href: "/delivery-policy" },
                   { name: "Returns Policy", href: "/returns-policy" },
                   { name: "Terms & Conditions", href: "/terms" },
                   { name: "Privacy Policy", href: "/privacy" },
@@ -149,21 +170,20 @@ export const Footer = () => {
               <ul className="space-y-4">
                 <li className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
-                  <span className="text-primary-foreground/70">
-                    123 African Market Street<br />
-                    London, UK
+                  <span className="text-primary-foreground/70 whitespace-pre-line">
+                    {settings?.address_uk || "123 African Market Street\nLondon, UK"}
                   </span>
                 </li>
                 <li className="flex items-center gap-3">
                   <Phone className="w-5 h-5 text-secondary flex-shrink-0" />
-                  <a href="tel:+441234567890" className="text-primary-foreground/70 hover:text-secondary transition-colors">
-                    +44 123 456 7890
+                  <a href={`tel:${settings?.support_phone_uk?.replace(/\s+/g, '')}`} className="text-primary-foreground/70 hover:text-secondary transition-colors">
+                    {settings?.support_phone_uk || "+44 123 456 7890"}
                   </a>
                 </li>
                 <li className="flex items-center gap-3">
                   <Mail className="w-5 h-5 text-secondary flex-shrink-0" />
-                  <a href="mailto:hello@sarafina.africa" className="text-primary-foreground/70 hover:text-secondary transition-colors">
-                    hello@sarafina.africa
+                  <a href={`mailto:${settings?.support_email}`} className="text-primary-foreground/70 hover:text-secondary transition-colors">
+                    {settings?.support_email || "hello@sarafina.africa"}
                   </a>
                 </li>
               </ul>
