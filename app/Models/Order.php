@@ -34,12 +34,14 @@ class Order extends Model
         'contact_phone',
         'points_redeemed',
         'discount_amount',
+        'gift_card_discount',
         'points_earned',
     ];
 
     protected $casts = [
         'estimated_delivery_date' => 'datetime',
         'discount_amount' => 'decimal:2',
+        'gift_card_discount' => 'decimal:2',
     ];
 
     public function user(): BelongsTo

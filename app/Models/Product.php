@@ -20,8 +20,10 @@ class Product extends Model
         'price_uk_eu',
         'price_international',
         'stock',
+        'low_stock_threshold',
         'image',
-        'status'
+        'status',
+        'type'
     ];
 
     public function department()

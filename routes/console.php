@@ -10,3 +10,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('loyalty:expire-points')->daily();
+
+Schedule::command('gift-cards:expire')->daily();

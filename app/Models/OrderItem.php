@@ -17,6 +17,13 @@ class OrderItem extends Model
         'unit_price',
         'quantity',
         'line_total',
+        'metadata'
+    ];
+
+    protected $casts = [
+        'metadata' => 'array',
+        'unit_price' => 'decimal:2',
+        'line_total' => 'decimal:2',
     ];
 
     public function order(): BelongsTo

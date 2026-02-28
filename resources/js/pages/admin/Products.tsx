@@ -60,6 +60,7 @@ export default function Products() {
         price_uk_eu: "",
         price_international: "",
         stock: "",
+        low_stock_threshold: "10",
         status: "In Stock",
         image: ""
     });
@@ -79,7 +80,7 @@ export default function Products() {
             const response = await fetch('/api/products');
             if (response.ok) {
                 const data = await response.json();
-                setProducts(data);
+                setProducts(data.filter((p: any) => p.type !== 'gift_card'));
             }
         } catch (error) {
             console.error("Failed to fetch products", error);
@@ -127,7 +128,8 @@ export default function Products() {
                 desired_net_price: prod.desired_net_price ? prod.desired_net_price.toString() : "",
                 price_uk_eu: prod.price_uk_eu ? prod.price_uk_eu.toString() : "",
                 price_international: prod.price_international ? prod.price_international.toString() : "",
-                stock: prod.stock.toString()
+                stock: prod.stock.toString(),
+                low_stock_threshold: prod.low_stock_threshold ? prod.low_stock_threshold.toString() : "10"
             });
             setImageFile(null);
             setDesiredNetPrice(prod.desired_net_price ? prod.desired_net_price.toString() : "");
@@ -144,6 +146,7 @@ export default function Products() {
                 price_uk_eu: "",
                 price_international: "",
                 stock: "",
+                low_stock_threshold: "10",
                 status: "In Stock",
                 image: ""
             });
@@ -205,6 +208,7 @@ export default function Products() {
             formData.append("price_uk_eu", priceUkEuValue);
             formData.append("price_international", priceInternationalValue);
             formData.append("stock", currentProduct.stock || "0");
+            formData.append("low_stock_threshold", currentProduct.low_stock_threshold || "10");
             formData.append("status", currentProduct.status);
             if (currentProduct.image) {
                 formData.append("image", currentProduct.image);
@@ -403,16 +407,32 @@ export default function Products() {
                                         </span>
                                     )}
                                 </div>
-                                <div className="rounded-lg border bg-muted/40 p-3 sm:p-4 space-y-2">
-                                    <Label htmlFor="stock">Stock quantity</Label>
-                                    <Input 
-                                        id="stock" 
-                                        type="number"
-                                        min="0"
-                                        placeholder="0" 
-                                        value={currentProduct.stock}
-                                        onChange={(e) => setCurrentProduct({...currentProduct, stock: e.target.value})}
-                                    />
+                                <div className="rounded-lg border bg-muted/40 p-3 sm:p-4 space-y-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="stock">Stock quantity</Label>
+                                        <Input 
+                                            id="stock" 
+                                            type="number"
+                                            min="0"
+                                            placeholder="0" 
+                                            value={currentProduct.stock}
+                                            onChange={(e) => setCurrentProduct({...currentProduct, stock: e.target.value})}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="low_stock_threshold">Low Stock Threshold</Label>
+                                        <div className="text-[10px] text-muted-foreground">
+                                            Alert when stock is below this value.
+                                        </div>
+                                        <Input 
+                                            id="low_stock_threshold" 
+                                            type="number"
+                                            min="0"
+                                            placeholder="10" 
+                                            value={currentProduct.low_stock_threshold}
+                                            onChange={(e) => setCurrentProduct({...currentProduct, low_stock_threshold: e.target.value})}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 

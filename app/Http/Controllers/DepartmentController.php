@@ -26,7 +26,8 @@ class DepartmentController extends Controller
         }
 
         $department->load(['products' => function ($query) {
-            $query->where(function ($q) {
+            $query->where('type', '!=', 'gift_card')
+                ->where(function ($q) {
                 $q->whereNull('category_id')
                     ->orWhereHas('category', function ($categoryQuery) {
                         $categoryQuery->where('status', 'Active');

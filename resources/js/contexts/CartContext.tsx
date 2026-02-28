@@ -1,20 +1,22 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 export interface CartItem {
+  cartItemId: string;
   id: number;
   name: string;
   price: number;
   image: string;
   quantity: number;
+  metadata?: Record<string, any>;
 }
 
 interface CartContextValue {
   items: CartItem[];
   totalItems: number;
   totalPrice: number;
-  updateItem: (id: number, updates: Partial<Omit<CartItem, "id">>) => void;
-  addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  removeItem: (id: number) => void;
+  updateItem: (cartItemId: string, updates: Partial<Omit<CartItem, "cartItemId" | "id">>) => void;
+  addItem: (item: Omit<CartItem, "quantity" | "cartItemId">, quantity?: number) => void;
+  removeItem: (cartItemId: string) => void;
   clearCart: () => void;
 }
 
@@ -32,7 +34,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          setItems(parsed);
+          // Migration: Ensure all items have cartItemId
+          const migrated = parsed.map((item: any) => ({
+            ...item,
+            cartItemId: item.cartItemId || `${item.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          }));
+          setItems(migrated);
         }
       } catch {
       }
@@ -43,32 +50,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items]);
 
-  const updateItem = (id: number, updates: Partial<Omit<CartItem, "id">>) => {
+  const updateItem = (cartItemId: string, updates: Partial<Omit<CartItem, "cartItemId" | "id">>) => {
     setItems((current) =>
-      current.map((item) => (item.id === id ? { ...item, ...updates } : item))
+      current.map((item) => (item.cartItemId === cartItemId ? { ...item, ...updates } : item))
     );
   };
 
-  const addItem = (item: Omit<CartItem, "quantity">, quantity: number = 1) => {
+  const addItem = (item: Omit<CartItem, "quantity" | "cartItemId">, quantity: number = 1) => {
     const safeQuantity = quantity < 1 ? 1 : Math.floor(quantity);
 
     setItems((current) => {
-      const existing = current.find((i) => i.id === item.id);
+      // Find existing item with same ID and same metadata
+      const existing = current.find((i) => 
+        i.id === item.id && 
+        JSON.stringify(i.metadata) === JSON.stringify(item.metadata)
+      );
 
       if (existing) {
         return current.map((i) =>
-          i.id === item.id
+          i.cartItemId === existing.cartItemId
             ? { ...i, quantity: i.quantity + safeQuantity }
             : i
         );
       }
 
-      return [...current, { ...item, quantity: safeQuantity }];
+      const newItem: CartItem = {
+        ...item,
+        quantity: safeQuantity,
+        cartItemId: `${item.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      };
+
+      return [...current, newItem];
     });
   };
 
-  const removeItem = (id: number) => {
-    setItems((current) => current.filter((item) => item.id !== id));
+  const removeItem = (cartItemId: string) => {
+    setItems((current) => current.filter((item) => item.cartItemId !== cartItemId));
   };
 
   const clearCart = () => {

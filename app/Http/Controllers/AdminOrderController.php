@@ -58,6 +58,7 @@ class AdminOrderController extends Controller
                     'delivery_cost' => (float) $order->delivery_cost,
                     'points_redeemed' => (int) ($order->points_redeemed ?? 0),
                     'discount_amount' => (float) ($order->discount_amount ?? 0),
+                    'gift_card_discount' => (float) ($order->gift_card_discount ?? 0),
                     'created_at' => $order->created_at,
                     'customer_id' => $order->user?->id,
                     'customer_name' => $order->user?->name,

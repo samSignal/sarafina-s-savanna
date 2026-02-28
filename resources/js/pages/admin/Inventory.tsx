@@ -14,6 +14,7 @@ export default function Inventory() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentProduct, setCurrentProduct] = useState(null);
     const [newStock, setNewStock] = useState("");
+    const [newThreshold, setNewThreshold] = useState("");
 
     useEffect(() => {
         fetchProducts();
@@ -35,6 +36,7 @@ export default function Inventory() {
     const handleOpenUpdateDialog = (product) => {
         setCurrentProduct(product);
         setNewStock(product.stock.toString());
+        setNewThreshold(product.low_stock_threshold ? product.low_stock_threshold.toString() : "10");
         setIsDialogOpen(true);
     };
 
@@ -47,7 +49,10 @@ export default function Inventory() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ stock: parseInt(newStock) }),
+                body: JSON.stringify({ 
+                    stock: parseInt(newStock),
+                    low_stock_threshold: parseInt(newThreshold)
+                }),
             });
 
             if (response.ok) {
@@ -160,20 +165,33 @@ export default function Inventory() {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="stock" className="text-right">
-                                Quantity
-                            </Label>
-                            <Input
-                                id="stock"
-                                type="number"
-                                min="0"
-                                value={newStock}
-                                onChange={(e) => setNewStock(e.target.value)}
-                                className="col-span-3"
-                            />
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="stock" className="text-right">
+                                    Quantity
+                                </Label>
+                                <Input
+                                    id="stock"
+                                    type="number"
+                                    min="0"
+                                    value={newStock}
+                                    onChange={(e) => setNewStock(e.target.value)}
+                                    className="col-span-3"
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="threshold" className="text-right">
+                                    Low Stock Alert
+                                </Label>
+                                <Input
+                                    id="threshold"
+                                    type="number"
+                                    min="0"
+                                    value={newThreshold}
+                                    onChange={(e) => setNewThreshold(e.target.value)}
+                                    className="col-span-3"
+                                />
+                            </div>
                         </div>
-                    </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                         <Button onClick={handleUpdateStock}>Save Changes</Button>

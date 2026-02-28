@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\GiftCard;
 use App\Models\LoyaltyTransaction;
 use App\Services\LoyaltyService;
 
@@ -84,6 +85,37 @@ class ClientProfileController extends Controller
                 ];
             });
 
+        $giftCards = GiftCard::where('recipient_email', $user->email)
+            ->latest()
+            ->get()
+            ->map(function ($card) {
+                return [
+                    'id' => $card->id,
+                    'code' => $card->code,
+                    'balance' => $card->balance,
+                    'initial_value' => $card->initial_value,
+                    'status' => $card->status,
+                    'expiry_date' => $card->expiry_date,
+                    'created_at' => $card->created_at,
+                ];
+            });
+
+        $purchasedGiftCards = GiftCard::where('purchaser_id', $user->id)
+            ->latest()
+            ->get()
+            ->map(function ($card) {
+                return [
+                    'id' => $card->id,
+                    'code' => $card->code,
+                    'balance' => $card->balance,
+                    'initial_value' => $card->initial_value,
+                    'status' => $card->status,
+                    'expiry_date' => $card->expiry_date,
+                    'recipient_email' => $card->recipient_email,
+                    'created_at' => $card->created_at,
+                ];
+            });
+
         return response()->json([
             'customer' => [
                 'id' => $user->id,
@@ -113,7 +145,28 @@ class ClientProfileController extends Controller
                 ];
             })->all(),
             'loyalty_ledger' => $loyaltyLedger,
-            'gift_cards' => [],
+            'gift_cards' => $giftCards->map(function ($card) {
+                return [
+                    'id' => $card['id'],
+                    'code' => $card['code'],
+                    'balance' => (float) $card['balance'],
+                    'initial_value' => (float) $card['initial_value'],
+                    'status' => $card['status'],
+                    'expiry' => $card['expiry_date'], // Map to frontend expectation
+                ];
+            }),
+            'purchased_gift_cards' => $purchasedGiftCards->map(function ($card) {
+                return [
+                    'id' => $card['id'],
+                    'code' => $card['code'],
+                    'balance' => (float) $card['balance'],
+                    'initial_value' => (float) $card['initial_value'],
+                    'status' => $card['status'],
+                    'expiry' => $card['expiry_date'],
+                    'recipient_email' => $card['recipient_email'],
+                    'created_at' => $card['created_at'],
+                ];
+            }),
             'stokvel' => null,
             'messages' => [],
         ]);

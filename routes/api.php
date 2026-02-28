@@ -15,6 +15,7 @@ use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\AdminDeliveryController;
 use App\Http\Controllers\CurrencyController;
 use App\Http\Controllers\AdminLoyaltyController;
+use App\Http\Controllers\AdminGiftCardController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -60,3 +61,19 @@ Route::get('admin/loyalty/stats', [AdminLoyaltyController::class, 'stats'])->mid
 Route::get('admin/loyalty/settings', [AdminLoyaltyController::class, 'getSettings'])->middleware('auth:sanctum');
 Route::post('admin/loyalty/settings', [AdminLoyaltyController::class, 'updateSettings'])->middleware('auth:sanctum');
 Route::get('loyalty/settings', [AdminLoyaltyController::class, 'getSettings']);
+Route::get('gift-cards/products', [App\Http\Controllers\GiftCardController::class, 'products']);
+Route::post('gift-cards/validate', [App\Http\Controllers\GiftCardController::class, 'validateCard'])->middleware('throttle:10,1');
+Route::get('client/gift-cards/{id}/transactions', [App\Http\Controllers\GiftCardController::class, 'transactions'])->middleware('auth:sanctum');
+
+Route::prefix('admin/gift-cards')->middleware('auth:sanctum')->group(function () {
+    Route::get('/export', [AdminGiftCardController::class, 'export']); // Place before {id} routes
+    Route::get('/products', [AdminGiftCardController::class, 'products']);
+    Route::post('/products', [AdminGiftCardController::class, 'storeProduct']);
+    Route::delete('/products/{id}', [AdminGiftCardController::class, 'destroyProduct']);
+    Route::get('/', [AdminGiftCardController::class, 'index']);
+    Route::post('/', [AdminGiftCardController::class, 'store']);
+    Route::put('/{id}', [AdminGiftCardController::class, 'update']);
+    Route::delete('/{id}', [AdminGiftCardController::class, 'destroy']);
+    Route::get('/{id}/transactions', [AdminGiftCardController::class, 'transactions']);
+    Route::get('/{id}/audit-logs', [AdminGiftCardController::class, 'auditLogs']);
+});

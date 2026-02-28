@@ -19,8 +19,9 @@ class AdminSalesController extends Controller
             ->whereBetween('created_at', [$startDate, $endDate]);
 
         $totalRevenue = $query->sum(DB::raw('COALESCE(total_gbp, total)'));
+        $giftCardUsage = $query->sum('gift_card_discount');
         $ordersCount = $query->count();
-        $averageOrderValue = $ordersCount > 0 ? $totalRevenue / $ordersCount : 0;
+        $averageOrderValue = $ordersCount > 0 ? ($totalRevenue + $giftCardUsage) / $ordersCount : 0;
         
         // Calculate growth
         $diffInDays = $startDate->diffInDays($endDate);
@@ -35,6 +36,7 @@ class AdminSalesController extends Controller
 
         return response()->json([
             'total_revenue' => $totalRevenue,
+            'gift_card_usage' => $giftCardUsage,
             'orders_count' => $ordersCount,
             'average_order_value' => $averageOrderValue,
             'revenue_growth' => round($revenueGrowth, 1),

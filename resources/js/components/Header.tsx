@@ -18,6 +18,7 @@ export const Header = () => {
   const [navItems, setNavItems] = useState([
     { label: "Home", href: "/" },
     { label: "Shop All", href: "/shop", highlight: true },
+    { label: "Gift Cards", href: "/gift-cards", highlight: true },
   ]);
 
   useEffect(() => {
@@ -55,6 +56,7 @@ export const Header = () => {
           { label: "Home", href: "/" },
           { label: "Shop All", href: "/shop", highlight: true },
           ...departmentNavItems,
+          { label: "Gift Cards", href: "/gift-cards", highlight: true },
         ]);
       } catch (error) {
         console.error("Failed to load departments for header", error);

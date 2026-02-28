@@ -9,6 +9,7 @@ import Shop from "./pages/Shop";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Cart from "./pages/Cart";
+import GiftCardPurchase from "./pages/GiftCardPurchase";
 import MyOrders from "./pages/MyOrders";
 import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
@@ -42,6 +43,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/category/:id" element={<Category />} />
           <Route path="/shop" element={<Shop />} />
+          <Route path="/gift-cards" element={<GiftCardPurchase />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/cart" element={<Cart />} />

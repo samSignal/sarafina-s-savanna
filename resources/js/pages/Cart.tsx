@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShoppingCart, Truck, Store, MapPin, Phone, User } from "lucide-react";
+import { ShoppingCart, Truck, Store, MapPin, Phone, User, X } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -24,6 +24,7 @@ interface LiveProduct {
   image: string;
   stock: number;
   status: string;
+  type?: string;
 }
 
 const Cart = () => {
@@ -35,6 +36,10 @@ const Cart = () => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { format, convert, selected } = useCurrency();
   const [pointsRedeemed, setPointsRedeemed] = useState<number | string>(0);
+  
+  // Gift Card State
+  const [giftCardCode, setGiftCardCode] = useState("");
+  const [appliedGiftCards, setAppliedGiftCards] = useState<{ code: string; balance: number }[]>([]);
 
   // Checkout State
   const [shippingMethod, setShippingMethod] = useState<"collection" | "delivery">("collection");
@@ -73,25 +78,39 @@ const Cart = () => {
 
       setSyncing(true);
       try {
-        const response = await fetch("/api/public/products");
-        if (!response.ok) {
-          return;
+        const [prodRes, giftRes] = await Promise.all([
+            fetch("/api/public/products"),
+            fetch("/api/gift-cards/products")
+        ]);
+
+        let allProducts: LiveProduct[] = [];
+
+        if (prodRes.ok) {
+            const prods = await prodRes.json();
+            allProducts = [...allProducts, ...prods];
         }
-        const data: LiveProduct[] = await response.json();
+        
+        if (giftRes.ok) {
+            const gifts = await giftRes.json();
+            allProducts = [...allProducts, ...gifts];
+        }
+        
+        const data = allProducts;
         setLiveProducts(data);
 
         data.forEach((product) => {
-          const inCart = items.find((item) => item.id === product.id);
-          if (inCart) {
+          // Sync all cart items that match this product ID
+          const matchingItems = items.filter((item) => item.id === product.id);
+          matchingItems.forEach((inCart) => {
             const ukPrice = Number(product.price_uk_eu ?? product.price);
             if (inCart.price !== ukPrice || inCart.name !== product.name || inCart.image !== product.image) {
-              updateItem(product.id, {
+              updateItem(inCart.cartItemId, {
                 price: ukPrice,
                 name: product.name,
                 image: product.image,
               });
             }
-          }
+          });
         });
       } finally {
         setSyncing(false);
@@ -153,20 +172,86 @@ const Cart = () => {
     fetchLoyaltySettings();
   }, []);
   const totalGbp = subtotalUk + (shippingMethod === 'delivery' ? deliveryCostGbp : 0);
-  const meetsMinAmount = totalGbp >= loyaltyMinAmountGbp;
-  const maxRedeemablePoints = Math.floor((meetsMinAmount ? totalGbp : 0) * (loyaltyMaxPercent / 100) * 100);
+
+  const eligibleTotalGbp = items.reduce((sum, item) => {
+      const live = liveMap.get(item.id);
+      if (live && live.type === 'gift_card') {
+          return sum;
+      }
+      const uk = live ? Number(live.price_uk_eu ?? live.price) : item.price;
+      return sum + uk * item.quantity;
+  }, 0) + (shippingMethod === 'delivery' ? deliveryCostGbp : 0);
+
+  const meetsMinAmount = eligibleTotalGbp >= loyaltyMinAmountGbp;
+  const maxRedeemablePoints = Math.floor((meetsMinAmount ? eligibleTotalGbp : 0) * (loyaltyMaxPercent / 100) * 100);
   const availablePoints = user?.points_balance || 0;
   const maxPoints = Math.min(maxRedeemablePoints, availablePoints);
 
   const appliedPoints = typeof pointsRedeemed === 'string' ? 0 : pointsRedeemed;
   const discountValueGbp = appliedPoints / 100;
   const discountValue = selected.code === 'GBP' ? discountValueGbp : discountValueGbp * selected.rate;
-  const finalTotal = Math.max(0, totalDisplay - discountValue);
+  
+  // Gift Card Calculation
+  let remainingTotalForGiftCards = Math.max(0, totalDisplay - discountValue);
+  let totalGiftCardDiscount = 0;
+  
+  const giftCardRedemptions = appliedGiftCards.map(card => {
+      const cardBalance = selected.code === 'GBP' ? card.balance : card.balance * selected.rate;
+      const deduction = Math.min(remainingTotalForGiftCards, cardBalance);
+      
+      remainingTotalForGiftCards -= deduction;
+      totalGiftCardDiscount += deduction;
+      
+      return {
+          code: card.code,
+          deduction,
+          balance: cardBalance
+      };
+  });
 
-  // Reset points when total changes
+  const finalTotal = Math.max(0, totalDisplay - discountValue - totalGiftCardDiscount);
+
+  // Reset points/gift cards when total changes? 
+  // Maybe just points. Gift cards are absolute amounts.
   useEffect(() => {
       setPointsRedeemed(0);
   }, [totalGbp, shippingMethod, items]);
+
+  const handleApplyGiftCard = async () => {
+    if (!giftCardCode) return;
+    if (appliedGiftCards.some(c => c.code === giftCardCode)) {
+        toast.error("This gift card has already been applied");
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/gift-cards/validate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}` // Optional based on backend, but good practice
+            },
+            body: JSON.stringify({ code: giftCardCode })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            toast.error(data.message || "Invalid gift card");
+            return;
+        }
+
+        setAppliedGiftCards([...appliedGiftCards, { code: data.code, balance: Number(data.balance) }]);
+        setGiftCardCode("");
+        toast.success("Gift card applied successfully");
+    } catch (error) {
+        toast.error("Failed to validate gift card");
+    }
+  };
+
+  const removeGiftCard = (code: string) => {
+      setAppliedGiftCards(appliedGiftCards.filter(c => c.code !== code));
+  };
 
   const handleCheckout = async () => {
     if (isCheckingOut) return;
@@ -211,6 +296,7 @@ const Cart = () => {
           items: items.map((item) => ({
             product_id: item.id,
             quantity: item.quantity,
+            metadata: item.metadata,
           })),
           currency: selected.code,
           rate: selected.rate,
@@ -219,6 +305,7 @@ const Cart = () => {
           contact_phone: contactPhone,
           shipping_address: shippingMethod === 'delivery' ? shippingAddress : null,
           points_redeemed: appliedPoints,
+          gift_card_codes: appliedGiftCards.map(c => c.code),
         }),
       });
 
@@ -287,7 +374,7 @@ const Cart = () => {
 
                 return (
                   <div
-                    key={item.id}
+                    key={item.cartItemId}
                     className="flex items-center gap-4 bg-card border rounded-lg p-4"
                   >
                     <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
@@ -333,10 +420,10 @@ const Cart = () => {
                             onClick={() => {
                               const nextQty = item.quantity - 1;
                               if (nextQty <= 0) {
-                                removeItem(item.id);
+                                removeItem(item.cartItemId);
                                 return;
                               }
-                              updateItem(item.id, { quantity: nextQty });
+                              updateItem(item.cartItemId, { quantity: nextQty });
                             }}
                           >
                             -
@@ -356,7 +443,7 @@ const Cart = () => {
                                 toast.error(`Only ${live.stock} in stock for ${live.name}`);
                                 return;
                               }
-                              updateItem(item.id, { quantity: nextQty });
+                              updateItem(item.cartItemId, { quantity: nextQty });
                             }}
                           >
                             +
@@ -376,7 +463,7 @@ const Cart = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => removeItem(item.cartItemId)}
                       >
                         Remove
                       </Button>
@@ -537,12 +624,63 @@ const Cart = () => {
                       </div>
                       {appliedPoints > 0 && (
                           <div className="flex justify-between text-green-600 font-medium text-sm">
-                              <span>Discount</span>
+                              <span>Points Discount</span>
                               <span>-{selected.symbol}{discountValue.toFixed(2)}</span>
                           </div>
                       )}
                   </div>
                 )}
+
+                <div className="space-y-2 pt-4 border-t">
+                    <Label htmlFor="gift-card" className="flex items-center gap-2">
+                        Gift Card
+                    </Label>
+                    <div className="flex gap-2">
+                        <Input 
+                            id="gift-card"
+                            placeholder="SARAFINA-XXXX-XXXX"
+                            value={giftCardCode}
+                            onChange={(e) => setGiftCardCode(e.target.value)}
+                            className="h-9"
+                        />
+                        <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            onClick={handleApplyGiftCard}
+                            disabled={!giftCardCode}
+                        >
+                            Apply
+                        </Button>
+                    </div>
+                    
+                    {appliedGiftCards.length > 0 && (
+                        <div className="space-y-2 mt-2">
+                            {giftCardRedemptions.map((card) => (
+                                <div key={card.code} className="flex justify-between items-center text-sm bg-muted/50 p-2 rounded">
+                                    <div className="flex flex-col">
+                                        <span className="font-medium">{card.code}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            Balance: {selected.symbol}{card.balance.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-green-600 font-medium">
+                                            -{selected.symbol}{card.deduction.toFixed(2)}
+                                        </span>
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="h-5 w-5 text-muted-foreground hover:text-destructive"
+                                            onClick={() => removeGiftCard(card.code)}
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 <Separator className="my-2" />
                 <div className="flex justify-between text-lg font-bold">

@@ -43,6 +43,7 @@ interface AdminOrder {
   delivery_cost: number;
   points_redeemed: number;
   discount_amount: number;
+  gift_card_discount: number;
   created_at: string;
   customer_id: number | null;
   customer_name: string | null;
@@ -397,6 +398,36 @@ export default function Orders() {
                           </div>
 
                           <div className="space-y-6">
+                            <div className="space-y-4">
+                              <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Payment Summary</h4>
+                              <div className="bg-white p-4 rounded-lg border text-sm space-y-2">
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Subtotal</span>
+                                  <span className="font-medium">{currencySymbol(order.currency)}{order.items.reduce((sum, item) => sum + item.line_total, 0).toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Delivery</span>
+                                  <span className="font-medium">{currencySymbol(order.currency)}{order.delivery_cost.toFixed(2)}</span>
+                                2</div>
+                                {order.discount_amount > 0 && (
+                                  <div className="flex justify-between text-green-600">
+                                    <span>Discount (Loyalty)</span>
+                                    <span>-{currencySymbol(order.currency)}{order.discount_amount.toFixed(2)}</span>
+                                  </div>
+                                )}
+                                {order.gift_card_discount > 0 && (
+                                  <div className="flex justify-between text-blue-600">
+                                    <span>Gift Card</span>
+                                    <span>-{currencySymbol(order.currency)}{order.gift_card_discount.toFixed(2)}</span>
+                                  </div>
+                                )}
+                                <div className="border-t pt-2 mt-2 flex justify-between font-bold text-base">
+                                  <span>Total Paid</span>
+                                  <span>{currencySymbol(order.currency)}{order.total.toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </div>
+
                             <div className="space-y-4">
                               <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Shipping Details</h4>
                               <div className="bg-white p-4 rounded-lg border text-sm space-y-1">

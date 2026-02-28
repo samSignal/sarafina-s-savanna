@@ -9,7 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Phone, MapPin, ShoppingCart, Wallet, Star, Gift, MessageCircle } from "lucide-react";
+import { Mail, Phone, MapPin, ShoppingCart, Wallet, Star, Gift, MessageCircle, Copy, Check, History, Loader2, Send } from "lucide-react";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Address {
   line1: string | null;
@@ -60,6 +62,8 @@ interface GiftCard {
   initial_value: number;
   status: string;
   expiry: string | null;
+  recipient_email?: string;
+  created_at?: string;
 }
 
 interface MessageEntry {
@@ -82,8 +86,18 @@ interface ClientProfileResponse {
   orders: Order[];
   loyalty_ledger: LoyaltyEntry[];
   gift_cards: GiftCard[];
+  purchased_gift_cards: GiftCard[];
   stokvel: StokvelStatus | null;
   messages: MessageEntry[];
+}
+
+interface Transaction {
+  id: number;
+  amount: string;
+  type: 'credit' | 'debit';
+  description: string;
+  created_at: string;
+  order?: { order_number: string };
 }
 
 const Account = () => {
@@ -92,6 +106,39 @@ const Account = () => {
   const [data, setData] = useState<ClientProfileResponse | null>(null);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Transaction Dialog State
+  const [transactionsOpen, setTransactionsOpen] = useState(false);
+  const [selectedCardTransactions, setSelectedCardTransactions] = useState<Transaction[]>([]);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
+  const [selectedCardCode, setSelectedCardCode] = useState("");
+
+  const handleViewTransactions = async (card: GiftCard) => {
+    setSelectedCardCode(card.code);
+    setTransactionsOpen(true);
+    setLoadingTransactions(true);
+    try {
+        const response = await fetch(`/api/client/gift-cards/${card.id}/transactions`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            setSelectedCardTransactions(data);
+        } else {
+            toast.error("Failed to fetch transactions");
+        }
+    } catch (error) {
+        console.error(error);
+        toast.error("An error occurred");
+    } finally {
+        setLoadingTransactions(false);
+    }
+  };
+
 
   useEffect(() => {
     if (loading) return;
@@ -343,7 +390,8 @@ const Account = () => {
                     <TabsTrigger value="personal">Personal Info</TabsTrigger>
                     <TabsTrigger value="orders">Order History</TabsTrigger>
                     <TabsTrigger value="loyalty">Loyalty Ledger</TabsTrigger>
-                    <TabsTrigger value="gift-cards">Gift Cards Owned</TabsTrigger>
+                    <TabsTrigger value="gift-cards">My Gift Cards</TabsTrigger>
+                    <TabsTrigger value="purchased-gift-cards">Sent Gift Cards</TabsTrigger>
                     <TabsTrigger value="stokvel">Stokvel / Savings</TabsTrigger>
                     <TabsTrigger value="messages">Messages Sent</TabsTrigger>
                   </TabsList>
@@ -508,22 +556,34 @@ const Account = () => {
                               <TableHead>Balance</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Expiry</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {data.gift_cards.map((card) => (
                               <TableRow key={card.id}>
-                                <TableCell className="font-mono">
+                                <TableCell className="font-mono flex items-center gap-2">
                                   {card.code}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(card.code);
+                                      toast.success("Code copied to clipboard");
+                                    }}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
                                 </TableCell>
                                 <TableCell>
-                                  R {card.initial_value.toFixed(2)}
+                                  £{Number(card.initial_value).toFixed(2)}
                                 </TableCell>
-                                <TableCell>R {card.balance.toFixed(2)}</TableCell>
+                                <TableCell>£{Number(card.balance).toFixed(2)}</TableCell>
                                 <TableCell>
                                   <Badge
                                     variant={
-                                      card.status === "Active"
+                                      card.status === "active"
                                         ? "default"
                                         : "secondary"
                                     }
@@ -535,6 +595,78 @@ const Account = () => {
                                   {card.expiry
                                     ? new Date(card.expiry).toLocaleDateString()
                                     : "-"}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="ghost" size="sm" onClick={() => handleViewTransactions(card)}>
+                                        <History className="mr-2 h-3 w-3" /> History
+                                    </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="purchased-gift-cards">
+                    {(!data.purchased_gift_cards || data.purchased_gift_cards.length === 0) ? (
+                      <p className="text-sm text-muted-foreground">
+                        You have not purchased any gift cards for others yet.
+                      </p>
+                    ) : (
+                      <div className="border rounded-md bg-white shadow-sm">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Date Purchased</TableHead>
+                              <TableHead>Recipient</TableHead>
+                              <TableHead>Code</TableHead>
+                              <TableHead>Initial Value</TableHead>
+                              <TableHead>Current Balance</TableHead>
+                              <TableHead>Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {data.purchased_gift_cards.map((card) => (
+                              <TableRow key={card.id}>
+                                <TableCell>
+                                  {card.created_at ? formatDate(card.created_at) : '-'}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <Mail className="h-4 w-4 text-muted-foreground" />
+                                    <span>{card.recipient_email || 'No email set'}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="font-mono flex items-center gap-2">
+                                  {card.code}
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(card.code);
+                                      toast.success("Code copied to clipboard");
+                                    }}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </TableCell>
+                                <TableCell>
+                                  £{Number(card.initial_value).toFixed(2)}
+                                </TableCell>
+                                <TableCell>£{Number(card.balance).toFixed(2)}</TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={
+                                      card.status === "active"
+                                        ? "default"
+                                        : "secondary"
+                                    }
+                                  >
+                                    {card.status}
+                                  </Badge>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -553,7 +685,7 @@ const Account = () => {
                         <div>
                           Contribution amount:{" "}
                           {data.stokvel.contribution_amount
-                            ? `£${data.stokvel.contribution_amount.toFixed(2)}`
+                            ? `£${Number(data.stokvel.contribution_amount).toFixed(2)}`
                             : "Not set"}
                         </div>
                         <div>
@@ -614,6 +746,45 @@ const Account = () => {
         )}
       </main>
       <Footer />
+      
+      {/* Transactions Dialog */}
+      <Dialog open={transactionsOpen} onOpenChange={setTransactionsOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                  <DialogTitle>Transaction History</DialogTitle>
+                  <DialogDescription>
+                      History for card {selectedCardCode}
+                  </DialogDescription>
+              </DialogHeader>
+              
+              <div className="py-4">
+                  {loadingTransactions ? (
+                      <div className="flex justify-center p-4">
+                          <Loader2 className="h-6 w-6 animate-spin" />
+                      </div>
+                  ) : selectedCardTransactions.length === 0 ? (
+                      <p className="text-center text-muted-foreground">No transactions found.</p>
+                  ) : (
+                      <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                          {selectedCardTransactions.map((tx) => (
+                              <div key={tx.id} className="flex justify-between items-center border-b pb-2 last:border-0">
+                                  <div>
+                                      <p className="font-medium text-sm">{tx.description}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                          {new Date(tx.created_at).toLocaleString()}
+                                          {tx.order && ` • Order #${tx.order.order_number}`}
+                                      </p>
+                                  </div>
+                                  <div className={`font-bold text-sm ${tx.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                                      {tx.type === 'credit' ? '+' : '-'}£{Number(tx.amount).toFixed(2)}
+                                  </div>
+                              </div>
+                          ))}
+                      </div>
+                  )}
+              </div>
+          </DialogContent>
+      </Dialog>
     </div>
   );
 };

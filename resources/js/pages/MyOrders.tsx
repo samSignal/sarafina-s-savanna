@@ -30,6 +30,7 @@ interface Order {
   estimated_delivery_date: string | null;
   created_at: string;
   items: OrderItem[];
+  gift_card_discount: number;
 }
 
 const MyOrders = () => {
@@ -245,6 +246,15 @@ const MyOrders = () => {
                           </span>
                         </div>
                       ))}
+                      {Number(order.gift_card_discount) > 0 && (
+                        <div className="flex justify-between text-blue-600 font-medium border-t pt-2 mt-2">
+                          <span>Gift Card</span>
+                          <span>
+                            -{currencySymbol(order.currency)}
+                            {Number(order.gift_card_discount).toFixed(2)}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

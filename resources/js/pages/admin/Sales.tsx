@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
-  Popover,
+  Popover, 
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
@@ -60,6 +60,7 @@ interface SalesStats {
   orders_count: number;
   average_order_value: number;
   revenue_growth: number;
+  gift_card_usage: number;
 }
 
 export default function Sales() {
@@ -68,6 +69,7 @@ export default function Sales() {
     orders_count: 0,
     average_order_value: 0,
     revenue_growth: 0,
+    gift_card_usage: 0,
   });
   
   const [chartData, setChartData] = useState<ChartData[]>([]);
@@ -203,7 +205,7 @@ export default function Sales() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -215,6 +217,20 @@ export default function Sales() {
             </div>
             <p className="text-xs text-muted-foreground">
                 {stats.revenue_growth > 0 ? '+' : ''}{stats.revenue_growth}% from previous period
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Gift Card Usage</CardTitle>
+            <PoundSterling className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {loading ? "..." : `£${stats.gift_card_usage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Redeemed in period
             </p>
           </CardContent>
         </Card>
