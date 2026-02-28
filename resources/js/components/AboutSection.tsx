@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import aboutStore from "@/assets/about-store.jpg";
 
 export const AboutSection = () => {
   return (
@@ -16,7 +15,7 @@ export const AboutSection = () => {
           >
             <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-strong">
               <img
-                src={aboutStore}
+                src="/images/about-store.jpg"
                 alt="Sarafina Foods Store"
                 className="w-full h-full object-cover"
               />

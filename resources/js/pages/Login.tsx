@@ -30,7 +30,7 @@ const Login = () => {
       const redirect = searchParams.get("redirect");
       
       if (user.role === 'admin' || user.role === 'super_admin') {
-        navigate(redirect || "/admin");
+        navigate("/admin");
       } else {
         navigate(redirect || "/");
       }
