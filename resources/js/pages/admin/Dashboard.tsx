@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ChartData {
   name: string;
@@ -55,6 +56,7 @@ interface AnalyticsStats {
 }
 
 export default function Dashboard() {
+  const { token } = useAuth();
   const [stats, setStats] = useState<AnalyticsStats>({
     total_revenue: 0,
     orders_count: 0,
@@ -80,7 +82,11 @@ export default function Dashboard() {
       if (startDate) params.append('start_date', format(startDate, 'yyyy-MM-dd'));
       if (endDate) params.append('end_date', format(endDate, 'yyyy-MM-dd'));
       
-      const response = await fetch(`/api/admin/analytics?${params.toString()}`);
+      const response = await fetch(`/api/admin/analytics?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setStats(data);
@@ -93,10 +99,10 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (date?.from) {
+    if (date?.from && token) {
       fetchAnalytics(date.from, date.to);
     }
-  }, [date]);
+  }, [date, token]);
 
   const handleQuickFilterChange = (value: string) => {
     const today = new Date();

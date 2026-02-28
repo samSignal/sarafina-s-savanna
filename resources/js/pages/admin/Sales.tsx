@@ -28,6 +28,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ChartData {
   name: string;
@@ -64,6 +65,7 @@ interface SalesStats {
 }
 
 export default function Sales() {
+  const { token } = useAuth();
   const [stats, setStats] = useState<SalesStats>({
     total_revenue: 0,
     orders_count: 0,
@@ -92,11 +94,15 @@ export default function Sales() {
       
       const queryString = params.toString();
 
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+
       const [statsRes, chartRes, recentRes, topRes] = await Promise.all([
-          fetch(`/api/admin/sales/stats?${queryString}`),
-          fetch(`/api/admin/sales/chart?${queryString}`),
-          fetch(`/api/admin/sales/recent?${queryString}`), // Recent sales might not need date filter for pagination, but maybe for context? Let's keep consistent.
-          fetch(`/api/admin/sales/top-products?${queryString}`)
+          fetch(`/api/admin/sales/stats?${queryString}`, { headers }),
+          fetch(`/api/admin/sales/chart?${queryString}`, { headers }),
+          fetch(`/api/admin/sales/recent?${queryString}`, { headers }), 
+          fetch(`/api/admin/sales/top-products?${queryString}`, { headers })
       ]);
 
       if (statsRes.ok) setStats(await statsRes.json());
@@ -115,10 +121,10 @@ export default function Sales() {
   };
 
   useEffect(() => {
-    if (date?.from) {
+    if (date?.from && token) {
       fetchSalesData(date.from, date.to);
     }
-  }, [date]);
+  }, [date, token]);
 
   const handleQuickFilterChange = (value: string) => {
     const today = new Date();
