@@ -7,6 +7,11 @@ use App\Services\LoyaltyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Events\Verified;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
+use Illuminate\Auth\Events\PasswordReset;
 
 class AuthController extends Controller
 {
@@ -24,6 +29,8 @@ class AuthController extends Controller
             'password' => $validated['password'],
         ]);
 
+        event(new Registered($user));
+
         app(LoyaltyService::class)->processNewAccountBonus($user);
 
         $token = $user->createToken('client')->plainTextToken;
@@ -38,6 +45,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'role' => $user->role,
             ],
             'token' => $token,
         ], 201);
@@ -73,6 +81,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'role' => $user->role,
             ],
             'token' => $token,
         ]);
@@ -90,5 +99,71 @@ class AuthController extends Controller
             'message' => 'Logged out successfully',
         ]);
     }
-}
 
+    public function verify(Request $request, $id, $hash)
+    {
+        $user = User::find($id);
+
+        if (! $user || ! hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+             return response()->json(['message' => 'Invalid verification link.'], 400);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+             return redirect(config('app.frontend_url', 'http://localhost:5173') . '/login?verified=1');
+        }
+
+        if ($user->markEmailAsVerified()) {
+            event(new Verified($user));
+        }
+
+        return redirect(config('app.frontend_url', 'http://localhost:5173') . '/login?verified=1');
+    }
+
+    public function resendVerificationEmail(Request $request)
+    {
+        if ($request->user()->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Email already verified.'], 400);
+        }
+
+        $request->user()->sendEmailVerificationNotification();
+
+        return response()->json(['message' => 'Verification link sent!']);
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $status = Password::sendResetLink($request->only('email'));
+
+        return $status === Password::RESET_LINK_SENT
+                    ? response()->json(['status' => __($status)])
+                    : response()->json(['email' => __($status)], 400);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->forceFill([
+                    'password' => Hash::make($password)
+                ])->setRememberToken(Str::random(60));
+
+                $user->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        return $status === Password::PASSWORD_RESET
+                    ? response()->json(['status' => __($status)])
+                    : response()->json(['email' => __($status)], 400);
+    }
+}

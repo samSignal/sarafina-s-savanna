@@ -18,6 +18,8 @@ class GiftCard extends Model
         'status',
         'expiry_date',
         'recipient_email',
+        'sender_name',
+        'message',
         'purchaser_id',
         'order_id'
     ];

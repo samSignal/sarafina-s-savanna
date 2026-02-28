@@ -2,26 +2,31 @@
 
 namespace App\Mail;
 
-use App\Models\GiftCard;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use App\Models\Order;
 
-class GiftCardIssued extends Mailable implements ShouldQueue
+class OrderPlaced extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $giftCard;
+    /**
+     * The order instance.
+     *
+     * @var \App\Models\Order
+     */
+    public $order;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(GiftCard $giftCard)
+    public function __construct(Order $order)
     {
-        $this->giftCard = $giftCard;
+        $this->order = $order;
     }
 
     /**
@@ -29,16 +34,8 @@ class GiftCardIssued extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
-        $subject = "You've received a Gift Card from Sarafina's Savanna!";
-        
-        if ($this->giftCard->sender_name) {
-            $subject = $this->giftCard->sender_name . " sent you a Gift Card!";
-        } elseif ($this->giftCard->purchaser) {
-            $subject = $this->giftCard->purchaser->name . " sent you a Gift Card!";
-        }
-
         return new Envelope(
-            subject: $subject,
+            subject: 'Order Confirmation #' . $this->order->order_number,
         );
     }
 
@@ -48,7 +45,7 @@ class GiftCardIssued extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.gift-card-issued',
+            markdown: 'emails.orders.placed',
         );
     }
 

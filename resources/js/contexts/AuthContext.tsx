@@ -4,6 +4,8 @@ interface User {
   id: number;
   name: string;
   email: string;
+  role?: string;
+  points_balance?: number;
 }
 
 interface AuthContextValue {
@@ -11,7 +13,7 @@ interface AuthContextValue {
   token: string | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<User>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -47,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: data.id,
             name: data.name,
             email: data.email,
+            role: data.role,
             points_balance: data.points_balance,
           });
         } else {
@@ -82,6 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
     setToken(data.token);
     localStorage.setItem("authToken", data.token);
+
+    return data.user;
   };
 
   const register = async (name: string, email: string, password: string) => {

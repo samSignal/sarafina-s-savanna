@@ -88,15 +88,22 @@ const items = [
 export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { loading, isAuthenticated } = useAuth();
+  const { loading, isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     if (loading) return;
+    
     if (!isAuthenticated) {
       const redirect = encodeURIComponent(location.pathname + location.search);
       navigate(`/login?redirect=${redirect}`, { replace: true });
+      return;
     }
-  }, [loading, isAuthenticated, location.pathname, location.search, navigate]);
+
+    // Check for admin role
+    if (user && user.role !== 'admin' && user.role !== 'super_admin') {
+      navigate('/', { replace: true });
+    }
+  }, [loading, isAuthenticated, user, location.pathname, location.search, navigate]);
 
   if (loading) {
     return null;

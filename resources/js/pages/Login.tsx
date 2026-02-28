@@ -25,10 +25,15 @@ const Login = () => {
 
     try {
       setSubmitting(true);
-      await login(email, password);
+      const user = await login(email, password);
       toast.success("Signed in successfully");
       const redirect = searchParams.get("redirect");
-      navigate(redirect || "/");
+      
+      if (user.role === 'admin' || user.role === 'super_admin') {
+        navigate(redirect || "/admin");
+      } else {
+        navigate(redirect || "/");
+      }
     } catch {
       toast.error("Invalid email or password");
     } finally {

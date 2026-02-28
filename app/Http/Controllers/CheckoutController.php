@@ -11,6 +11,7 @@ use App\Models\GiftCardTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\GiftCardIssued;
 use App\Mail\GiftCardRedeemed;
@@ -19,6 +20,8 @@ use Stripe\Checkout\Session as StripeSession;
 use Stripe\Coupon;
 use Stripe\Stripe;
 use App\Services\LoyaltyService;
+use App\Services\GiftCardService;
+use App\Mail\OrderPlaced;
 
 class CheckoutController extends Controller
 {
@@ -447,66 +450,34 @@ class CheckoutController extends Controller
             ]);
 
             // Generate Gift Cards for any gift card products in the order
-            $order->load('items.product');
-            
-            // Prevent duplicate generation
-            if (!GiftCard::where('order_id', $order->id)->exists()) {
-                // Group gift card items by recipient email to create single cards for multiple denominations
-                $giftCardItems = $order->items->filter(function($item) {
-                    return $item->product && $item->product->type === 'gift_card';
-                });
+            try {
+                app(GiftCardService::class)->issueGiftCards($order);
+            } catch (\Exception $e) {
+                // Log but don't fail transaction
+                Log::error("Failed to issue gift cards for order {$order->id}: " . $e->getMessage());
+            }
 
-                if ($giftCardItems->isNotEmpty()) {
-                    // Group by recipient email
-                    $cardsToCreate = [];
-                    
-                    foreach ($giftCardItems as $item) {
-                        $recipientEmail = $item->metadata['recipient_email'] ?? $order->user->email ?? null;
-                        // Use a key that includes email to group them. If email is null, maybe group all nulls together?
-                        // The frontend enforces an email, but let's be safe.
-                        $key = $recipientEmail ?: 'self';
-                        
-                        if (!isset($cardsToCreate[$key])) {
-                            $cardsToCreate[$key] = [
-                                'recipient_email' => $recipientEmail,
-                                'amount' => 0,
-                                'items' => []
-                            ];
-                        }
-                        
-                        $basePriceGbp = $item->metadata['base_price_gbp'] ?? ($item->unit_price / ($order->exchange_rate ?: 1));
-                        $cardsToCreate[$key]['amount'] += $basePriceGbp * $item->quantity;
-                        $cardsToCreate[$key]['items'][] = $item;
+            // Award Loyalty Points
+            try {
+                $loyaltyService = app(LoyaltyService::class);
+                $loyaltyService->awardPoints($order);
+
+                if ($order->points_redeemed > 0) {
+                    $user = $order->user;
+                    if ($user) {
+                        $loyaltyService->redeemPoints($user, $order->points_redeemed, $order);
                     }
+                }
+            } catch (\Exception $e) {
+                Log::error("Loyalty processing failed for order {$order->id}: " . $e->getMessage());
+            }
 
-                    foreach ($cardsToCreate as $data) {
-                        if ($data['amount'] <= 0) continue;
-
-                        $code = GiftCard::generateCode();
-                        
-                        $giftCard = GiftCard::create([
-                            'code' => $code,
-                            'initial_value' => $data['amount'],
-                            'balance' => $data['amount'],
-                            'status' => 'active',
-                            'purchaser_id' => $order->user_id,
-                            'recipient_email' => $data['recipient_email'],
-                            'expiry_date' => now()->addYear(),
-                            'order_id' => $order->id,
-                        ]);
-
-                        GiftCardTransaction::create([
-                            'gift_card_id' => $giftCard->id,
-                            'order_id' => $order->id,
-                            'amount' => $data['amount'],
-                            'type' => 'issuance',
-                            'description' => 'Initial purchase',
-                        ]);
-
-                        if ($giftCard->recipient_email) {
-                            Mail::to($giftCard->recipient_email)->send(new GiftCardIssued($giftCard));
-                        }
-                    }
+            // Send Order Confirmation Email
+            if ($order->user && $order->user->email) {
+                try {
+                    Mail::to($order->user->email)->send(new OrderPlaced($order));
+                } catch (\Exception $e) {
+                    Log::error("Failed to send order confirmation email for order {$order->id}: " . $e->getMessage());
                 }
             }
         });
