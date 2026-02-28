@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useSearchParams } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const STRIPE_FEE_CONFIG = {
     uk_eu: {
@@ -37,6 +38,7 @@ function calculatePriceWithStripeFees(net: number, percentFee: number, fixedFee:
 }
 
 export default function Products() {
+    const { token } = useAuth();
     const [searchParams] = useSearchParams();
     const initialDeptId = searchParams.get("department_id");
 
@@ -77,7 +79,11 @@ export default function Products() {
 
     const fetchProducts = async () => {
         try {
-            const response = await fetch('/api/products');
+            const response = await fetch('/api/products', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 setProducts(data.filter((p: any) => p.type !== 'gift_card'));
@@ -90,7 +96,11 @@ export default function Products() {
 
     const fetchDepartments = async () => {
         try {
-            const response = await fetch('/api/departments');
+            const response = await fetch('/api/departments', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 setDepartments(data);
@@ -102,7 +112,11 @@ export default function Products() {
 
     const fetchCategories = async () => {
         try {
-            const response = await fetch('/api/categories');
+            const response = await fetch('/api/categories', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 setCategories(data);
@@ -222,6 +236,7 @@ export default function Products() {
                     method: 'POST',
                     headers: {
                         "X-HTTP-Method-Override": "PUT",
+                        'Authorization': `Bearer ${token}`
                     },
                     body: formData,
                 });
@@ -234,6 +249,9 @@ export default function Products() {
             } else {
                 const response = await fetch('/api/products', {
                     method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: formData,
                 });
 
@@ -254,7 +272,10 @@ export default function Products() {
         if (window.confirm("Are you sure you want to delete this product?")) {
             try {
                 const response = await fetch(`/api/products/${id}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
 
                 if (response.ok) {
