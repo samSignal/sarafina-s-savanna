@@ -49,7 +49,7 @@ export const Footer = () => {
                 </span>
               </a>
               <p className="text-primary-foreground/70 mb-6 leading-relaxed">
-                Confident African flavours for every day. Bold, fresh and proudly Sarafina.
+                Your trusted bridge to Zimbabwe. Shop online from anywhere in the world and we'll deliver fresh, quality groceries to your loved ones back home.
               </p>
               <div className="flex gap-4">
                 <a href="https://www.facebook.com/share/g/1aVTavof8R/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-primary-foreground/10 hover:bg-secondary rounded-full flex items-center justify-center transition-colors">

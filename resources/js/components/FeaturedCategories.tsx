@@ -41,7 +41,7 @@ export const FeaturedCategories = () => {
           viewport={{ once: true }}
           className="text-center font-display text-2xl md:text-3xl font-bold text-primary mb-4"
         >
-          EVERYDAY SHOPPING
+          SEND ESSENTIALS HOME
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -50,7 +50,7 @@ export const FeaturedCategories = () => {
           transition={{ delay: 0.1 }}
           className="text-center text-muted-foreground mb-10 max-w-2xl mx-auto"
         >
-          Discover our wide selection of authentic African foods and ingredients
+          Choose from our wide selection of quality groceries, fresh meat, and pantry staples for your family in Zimbabwe
         </motion.p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

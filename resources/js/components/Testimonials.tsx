@@ -3,18 +3,18 @@ import { Star, Quote } from "lucide-react";
 
 const testimonials = [
   {
-    name: "Amara O.",
-    text: "Sarafina Foods is my go-to for authentic African ingredients! The spices are so fresh and the delivery is always on time. Finally found a store that understands our cuisine!",
+    name: "Tendai M. (UK)",
+    text: "Living in London, it was always a hassle to send money or goods to my parents in Harare. Sarafina made it so easy! I ordered online and they received their groceries the next day.",
     rating: 5,
   },
   {
-    name: "Michael K.",
-    text: "The quality of the fresh meats is outstanding. Reminds me of home! The customer service is also excellent – they really care about their customers.",
+    name: "Sarah K. (USA)",
+    text: "The quality of the fresh meat and produce is outstanding. My sister in Bulawayo was so impressed. It's such a relief to have a reliable service I can trust from Texas.",
     rating: 5,
   },
   {
-    name: "Fatima B.",
-    text: "I've been ordering from Sarafina Foods for months now. Their selection is amazing and everything is always fresh. Highly recommend to anyone missing the taste of home!",
+    name: "Farai C. (Australia)",
+    text: "I've been using Sarafina for months now to support my family back home. The website is easy to use, payments are secure, and the delivery team is very professional.",
     rating: 5,
   },
 ];

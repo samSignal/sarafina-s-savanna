@@ -40,22 +40,21 @@ export const AboutSection = () => {
               We Are <span className="text-primary">Sarafina</span>
             </h2>
             <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-              We bring the <strong>confident taste of Africa</strong> to your doorstep.
-              At Sarafina, we pride ourselves in stocking all of your favourite
-              African goods – from traditional spices to fresh produce.
+              <strong>Sarafina</strong> is more than just a shop; we are a bridge connecting the 
+              global diaspora with their roots in Zimbabwe. Whether you are in the UK, USA, 
+              or anywhere else, we make it easy to care for your family back home.
             </p>
             <p className="text-muted-foreground mb-6 leading-relaxed">
-              Every item in our store tells a story of home, tradition, and flavour.
-              Our carefully curated selection includes premium meats, authentic spices,
-              fresh tropical fruits, and traditional beverages that will transport
-              you straight to the heart of Africa.
+              With our seamless online platform and established physical presence in Zimbabwe, 
+              you can shop with confidence knowing that your loved ones will receive premium quality 
+              groceries and essentials. We combine international service standards with local reliability.
             </p>
             <ul className="space-y-3 mb-8">
               {[
-                "100% Authentic African Products",
-                "Fresh Quality Guaranteed",
-                "Fast & Reliable Delivery",
-                "Family Recipes & Traditional Flavors",
+                "Order Online from Anywhere in the World",
+                "Reliable Local Delivery & Collection in Zimbabwe",
+                "Secure International Payments",
+                "Premium Quality Fresh Produce & Groceries",
               ].map((item) => (
                 <li key={item} className="flex items-center gap-3 text-foreground">
                   <span className="w-2 h-2 bg-secondary rounded-full" />

@@ -9,24 +9,24 @@ import hero3 from "@/assets/hero-3.jpg";
 const slides = [
   {
     image: hero1,
-    title: "Authentic African Cuisine",
-    subtitle: "Now Available",
-    description: "Experience the finest quality African dishes. Traditional recipes made with love and authentic spices.",
-    cta: "Shop Now",
+    title: "Send Love Home to Zimbabwe",
+    subtitle: "Connecting Families",
+    description: "Shop online from anywhere in the world and have premium groceries delivered to your loved ones in Zimbabwe.",
+    cta: "Start Shopping",
   },
   {
     image: hero2,
-    title: "Premium Spices",
-    subtitle: "Fresh Arrivals",
-    description: "Discover our collection of authentic African spices and seasonings to elevate your cooking.",
-    cta: "Explore Spices",
+    title: "Sarafina's Savanna",
+    subtitle: "Trusted Quality",
+    description: "Your reliable partner for authentic groceries, fresh produce, and household essentials in Zimbabwe.",
+    cta: "Explore Our Range",
   },
   {
     image: hero3,
-    title: "Fresh Produce",
-    subtitle: "Farm to Table",
-    description: "Fresh tropical fruits and vegetables delivered straight from trusted farms to your kitchen.",
-    cta: "Shop Fresh",
+    title: "Fresh & Delivered",
+    subtitle: "Doorstep Delivery",
+    description: "We ensure your family receives only the freshest quality products, delivered with care and professionalism.",
+    cta: "Order Now",
   },
 ];
 

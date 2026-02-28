@@ -8,29 +8,29 @@ import {
 
 const faqs = [
   {
-    question: "How long will my delivery take?",
+    question: "Can I order from outside Zimbabwe?",
     answer:
-      "Once your order is placed, we require 1-2 working days for processing and 2 additional working days for delivery. Fresh meat orders may take an extra day as they are prepared fresh before shipping.",
+      "Yes! Our platform is specifically designed for the diaspora. You can order from anywhere in the world (UK, USA, Australia, etc.) and we will deliver the goods to your loved ones in Zimbabwe.",
   },
   {
-    question: "Do you offer free delivery?",
+    question: "Where do you deliver in Zimbabwe?",
     answer:
-      "Yes! We offer free delivery on all orders over £50. For orders under £50, a flat rate delivery fee of £4.99 applies.",
+      "We currently deliver to Harare, Bulawayo, and surrounding areas. We also offer a 'Click & Collect' service at our physical stores for your family to pick up.",
   },
   {
-    question: "How do I know my products are fresh?",
+    question: "How do I pay for my order?",
     answer:
-      "All our products are carefully sourced and stored in optimal conditions. Fresh items are packed with ice packs and delivered in insulated packaging to ensure freshness.",
+      "We accept all major international credit/debit cards (Visa, Mastercard) and secure online payment methods. You pay in your local currency, and we handle the rest.",
   },
   {
-    question: "What areas do you deliver to?",
+    question: "How long will delivery take?",
     answer:
-      "We currently deliver to all UK mainland addresses. Unfortunately, we do not ship to Northern Ireland, the Channel Islands, or the Isle of Man at this time.",
+      "For orders in Harare and Bulawayo, we typically deliver within 24-48 hours. Fresh produce and meat orders are prepared on the day of delivery to ensure maximum freshness.",
   },
   {
-    question: "Can I return or exchange products?",
+    question: "Can I send a personalized message?",
     answer:
-      "Due to the perishable nature of our products, we cannot accept returns. However, if you receive damaged or incorrect items, please contact us within 24 hours and we'll resolve the issue.",
+      "Absolutely! You can add a gift message at checkout, which we will include with the delivery to add that personal touch for your family.",
   },
 ];
 

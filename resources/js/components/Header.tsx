@@ -71,7 +71,7 @@ export const Header = () => {
       {/* Top bar */}
       <div className="bg-brand-gradient text-primary-foreground py-2">
         <div className="container text-center text-sm font-medium tracking-wide">
-          Sarafina • Confident African Flavours • Fresh. Bold. Proud.
+          Connecting the Global Diaspora to Home • Premium Grocery Delivery in Zimbabwe
         </div>
       </div>
 
