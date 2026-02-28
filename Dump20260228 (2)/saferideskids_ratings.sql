@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.32, for Win64 (x86_64)
 --
--- Host: localhost    Database: sarafinafoods
+-- Host: localhost    Database: saferideskids
 -- ------------------------------------------------------
 -- Server version	9.5.0
 
@@ -21,39 +21,42 @@ SET @@SESSION.SQL_LOG_BIN= 0;
 -- GTID state at the beginning of the backup 
 --
 
-SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ 'ad7d1256-c6ae-11f0-8778-5c5310ec1f7e:1-8746';
+SET @@GLOBAL.GTID_PURGED=/*!80000 '+'*/ 'ad7d1256-c6ae-11f0-8778-5c5310ec1f7e:1-8911';
 
 --
--- Table structure for table `gift_card_audit_logs`
+-- Table structure for table `ratings`
 --
 
-DROP TABLE IF EXISTS `gift_card_audit_logs`;
+DROP TABLE IF EXISTS `ratings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `gift_card_audit_logs` (
+CREATE TABLE `ratings` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `gift_card_id` bigint unsigned NOT NULL,
-  `user_id` bigint unsigned DEFAULT NULL,
-  `action` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `details` json DEFAULT NULL,
-  `ip_address` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `trip_id` bigint unsigned NOT NULL,
+  `driver_id` bigint unsigned NOT NULL,
+  `parent_id` bigint unsigned NOT NULL,
+  `rating` tinyint unsigned NOT NULL,
+  `comment` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `gift_card_audit_logs_gift_card_id_foreign` (`gift_card_id`),
-  KEY `gift_card_audit_logs_user_id_foreign` (`user_id`),
-  CONSTRAINT `gift_card_audit_logs_gift_card_id_foreign` FOREIGN KEY (`gift_card_id`) REFERENCES `gift_cards` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `gift_card_audit_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  UNIQUE KEY `ratings_trip_id_parent_id_unique` (`trip_id`,`parent_id`),
+  KEY `ratings_driver_id_foreign` (`driver_id`),
+  KEY `ratings_parent_id_foreign` (`parent_id`),
+  CONSTRAINT `ratings_driver_id_foreign` FOREIGN KEY (`driver_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ratings_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `ratings_trip_id_foreign` FOREIGN KEY (`trip_id`) REFERENCES `trips` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `gift_card_audit_logs`
+-- Dumping data for table `ratings`
 --
 
-LOCK TABLES `gift_card_audit_logs` WRITE;
-/*!40000 ALTER TABLE `gift_card_audit_logs` DISABLE KEYS */;
-/*!40000 ALTER TABLE `gift_card_audit_logs` ENABLE KEYS */;
+LOCK TABLES `ratings` WRITE;
+/*!40000 ALTER TABLE `ratings` DISABLE KEYS */;
+INSERT INTO `ratings` VALUES (1,1,3,2,4,'Good drive, slightly late.','2026-01-20 17:28:34','2026-01-20 17:28:34'),(2,2,3,2,5,'Perfect timing today!','2026-01-20 17:28:34','2026-01-20 17:28:34'),(3,3,4,2,5,'Excellent service.','2026-01-20 17:28:34','2026-01-20 17:28:34'),(4,94,9,10,5,NULL,'2026-01-25 18:43:28','2026-01-25 18:43:28'),(5,72,9,8,5,'ghg','2026-02-02 15:57:34','2026-02-02 15:57:34');
+/*!40000 ALTER TABLE `ratings` ENABLE KEYS */;
 UNLOCK TABLES;
 SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -66,4 +69,4 @@ SET @@SESSION.SQL_LOG_BIN = @MYSQLDUMP_TEMP_LOG_BIN;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-02-28 10:11:10
+-- Dump completed on 2026-02-28 11:31:12
