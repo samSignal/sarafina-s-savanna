@@ -17,38 +17,58 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
-        ]);
+        try {
+            $validated = $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'password' => ['required', 'string', 'min:8'],
+            ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => $validated['password'],
-        ]);
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => $validated['password'],
+            ]);
 
-        event(new Registered($user));
+            try {
+                event(new Registered($user));
+            } catch (\Exception $e) {
+                // Log email error but don't fail registration
+                \Illuminate\Support\Facades\Log::error('Registration email failed: ' . $e->getMessage());
+            }
 
-        app(LoyaltyService::class)->processNewAccountBonus($user);
+            try {
+                app(LoyaltyService::class)->processNewAccountBonus($user);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Loyalty bonus failed: ' . $e->getMessage());
+            }
 
-        $token = $user->createToken('client')->plainTextToken;
+            $token = $user->createToken('client')->plainTextToken;
 
-        // Check for birthday bonus
-        if ($user->birthday) {
-            app(LoyaltyService::class)->checkBirthdayBonus($user);
+            // Check for birthday bonus
+            if ($user->birthday) {
+                try {
+                    app(LoyaltyService::class)->checkBirthdayBonus($user);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Birthday bonus failed: ' . $e->getMessage());
+                }
+            }
+
+            return response()->json([
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                ],
+                'token' => $token,
+            ], 201);
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Registration failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Registration failed. Please try again.'], 500);
         }
-
-        return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-            ],
-            'token' => $token,
-        ], 201);
     }
 
     public function login(Request $request)
