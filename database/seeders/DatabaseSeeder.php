@@ -16,14 +16,16 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            AdminDashboardSeeder::class,
-        ]);
-        
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            UsersTableSeeder::class,
+            DepartmentsTableSeeder::class,
+            CategoriesTableSeeder::class,
+            ProductsTableSeeder::class,
+            OrdersTableSeeder::class,
+            OrderItemsTableSeeder::class,
+            GiftCardsTableSeeder::class,
+            GeneralSettingsTableSeeder::class,
+            DeliverySettingsTableSeeder::class,
+            // AdminDashboardSeeder::class, // Already seeded via other seeders if included
         ]);
     }
 }
