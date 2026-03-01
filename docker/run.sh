@@ -5,12 +5,11 @@ cd /var/www/html
 # Link storage
 php artisan storage:link
 
-
 # Run migrations
 php artisan migrate --force
 
-# Seed database (Automatically populate data on deployment)
-php artisan db:seed --force
+# Seed database (Commented out to prevent slow boot times - run manually if needed)
+# php artisan db:seed --force
 
 # Start Queue Worker in background
 php artisan queue:work --daemon &
