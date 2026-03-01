@@ -4,7 +4,7 @@ FROM php:8.2-apache
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     libzip-dev \
     libicu-dev \
-    libfreetype6-dev \
+    libfreetype-dev \
     libjpeg62-turbo-dev \
     gnupg \
     ca-certificates
@@ -30,6 +30,9 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Set composer timeout to handle slow downloads
+ENV COMPOSER_PROCESS_TIMEOUT=2000
 
 # Set working directory
 WORKDIR /var/www/html
