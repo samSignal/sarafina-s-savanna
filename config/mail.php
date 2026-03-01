@@ -41,7 +41,8 @@ return [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),
             'url' => env('MAIL_URL'),
-            'host' => env('MAIL_HOST', '127.0.0.1'),
+            // Force IPv4 resolution for host to avoid IPv6 timeouts
+            'host' => gethostbyname(env('MAIL_HOST', '127.0.0.1')),
             'port' => env('MAIL_PORT', 2525),
             'encryption' => env('MAIL_ENCRYPTION', 'tls'),
             'username' => env('MAIL_USERNAME'),
