@@ -1,5 +1,8 @@
 FROM php:8.2-apache
 
+# Set non-interactive mode for apt-get
+ENV DEBIAN_FRONTEND=noninteractive
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     libpng-dev \
@@ -13,7 +16,9 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libicu-dev \
     libfreetype6-dev \
-    libjpeg62-turbo-dev
+    libjpeg62-turbo-dev \
+    gnupg \
+    ca-certificates
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -38,14 +43,18 @@ COPY --chown=www-data:www-data . /var/www/html
 # Copy virtual host config
 COPY docker/vhost.conf /etc/apache2/sites-available/000-default.conf
 
-# Enable Apache modules
-RUN a2enmod rewrite
+# Enable Apache modules and set ServerName
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf \
+    && a2enmod rewrite
 
 # Install composer dependencies
 RUN composer install --no-interaction --optimize-autoloader --no-dev
 
 # Install NPM dependencies and build assets
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+RUN mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
     && apt-get install -y nodejs \
     && npm install \
     && npm run build
