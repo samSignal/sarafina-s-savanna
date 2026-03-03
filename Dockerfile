@@ -38,9 +38,6 @@ ENV COMPOSER_PROCESS_TIMEOUT=2000
 WORKDIR /var/www/html
 
 # Copy existing application directory contents
-COPY . /var/www/html
-
-# Copy existing application directory permissions
 COPY --chown=www-data:www-data . /var/www/html
 
 # Copy virtual host config
