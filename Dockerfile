@@ -1,5 +1,8 @@
 FROM php:8.2-apache
 
+# Force cache invalidation to fix corrupted layer
+ENV DOCKER_BUILD_FIX=2026-03-03-v2
+
 # Set non-interactive mode for apt-get
 ENV DEBIAN_FRONTEND=noninteractive
 
