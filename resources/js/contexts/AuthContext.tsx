@@ -5,6 +5,9 @@ interface User {
   name: string;
   email: string;
   role?: string;
+  role_id?: number;
+  role_name?: string;
+  permissions?: string[];
   points_balance?: number;
 }
 
@@ -50,6 +53,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             name: data.name,
             email: data.email,
             role: data.role,
+            role_id: data.role_id,
+            role_name: data.role_name,
+            permissions: data.permissions || [],
             points_balance: data.points_balance,
           });
         } else {

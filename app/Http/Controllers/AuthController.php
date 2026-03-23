@@ -60,6 +60,8 @@ class AuthController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'role_id' => $user->role_id,
+                    'role_name' => $user->roleDefinition ? $user->roleDefinition->name : null,
                 ],
                 'token' => $token,
             ], 201);
@@ -67,7 +69,11 @@ class AuthController extends Controller
             return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Registration failed: ' . $e->getMessage());
-            return response()->json(['message' => 'Registration failed. Please try again.'], 500);
+            // Return actual error for debugging
+            return response()->json([
+                'message' => 'Registration failed: ' . $e->getMessage(),
+                'trace' => config('app.debug') ? $e->getTraceAsString() : null
+            ], 500);
         }
     }
 
@@ -102,6 +108,8 @@ class AuthController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->role,
+                'role_id' => $user->role_id,
+                'role_name' => $user->roleDefinition ? $user->roleDefinition->name : null,
             ],
             'token' => $token,
         ]);

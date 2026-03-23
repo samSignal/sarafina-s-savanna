@@ -237,7 +237,7 @@ const InfoPage = () => {
             <section>
               <h3 className="font-display text-xl font-bold mb-4">Delivery Areas</h3>
               <p className="mb-4">
-                Sarafina Market currently operates a dedicated delivery fleet in the following regions:
+                Sarafina currently operates a dedicated delivery fleet in the following regions:
               </p>
               <ul className="list-disc pl-5 space-y-2 mb-4">
                 <li><strong>Harare Metropolitan Province:</strong> Including Chitungwiza, Epworth, and Ruwa.</li>
@@ -292,7 +292,7 @@ const InfoPage = () => {
         return (
           <div className="space-y-8 max-w-4xl">
             <p className="text-lg">
-              At Sarafina Market, we are committed to delivering high-quality products. If you or your recipient are not entirely satisfied with your purchase, we're here to help.
+              At Sarafina, we are committed to delivering high-quality products. If you or your recipient are not entirely satisfied with your purchase, we're here to help.
             </p>
 
             <section>
@@ -342,12 +342,12 @@ const InfoPage = () => {
             
             <section>
               <h3 className="font-bold text-lg mb-2">1. Introduction</h3>
-              <p>Welcome to Sarafina Market. These Terms and Conditions govern your use of our website and the purchase of products from our online store. By accessing or using our service, you agree to be bound by these terms.</p>
+              <p>Welcome to Sarafina. These Terms and Conditions govern your use of our website and the purchase of products from our online store. By accessing or using our service, you agree to be bound by these terms.</p>
             </section>
 
             <section>
               <h3 className="font-bold text-lg mb-2">2. Services</h3>
-              <p>Sarafina Market provides an online platform for customers (primarily in the diaspora) to purchase groceries and household goods for delivery to recipients in Zimbabwe.</p>
+              <p>Sarafina provides an online platform for customers (primarily in the diaspora) to purchase groceries and household goods for delivery to recipients in Zimbabwe.</p>
             </section>
 
             <section>
@@ -372,7 +372,7 @@ const InfoPage = () => {
 
             <section>
               <h3 className="font-bold text-lg mb-2">7. Limitation of Liability</h3>
-              <p>To the maximum extent permitted by law, Sarafina Market shall not be liable for any indirect, incidental, or consequential damages arising out of the use of our service.</p>
+              <p>To the maximum extent permitted by law, Sarafina shall not be liable for any indirect, incidental, or consequential damages arising out of the use of our service.</p>
             </section>
 
             <section>

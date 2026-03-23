@@ -35,7 +35,7 @@ class GiftCardRedeemed extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "Gift Card Redeemed - Sarafina's Savanna",
+            subject: "Gift Card Redeemed - Sarafina",
         );
     }
 

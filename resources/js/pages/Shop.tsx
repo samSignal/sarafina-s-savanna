@@ -19,6 +19,8 @@ interface Product {
   image: string;
   stock: number;
   status: string;
+  is_on_promotion?: boolean;
+  promotion_price?: number;
 }
 
 const Shop = () => {
@@ -139,12 +141,28 @@ const Shop = () => {
                       {product.description}
                     </p>
                     <div className="flex items-center justify-between mt-auto gap-2">
-                      <span className="font-bold text-lg">
-                        {format(
-                          Number(product.price_uk_eu ?? product.price),
-                          Number(product.price_international ?? product.price)
+                      <div className="flex flex-col">
+                        {product.is_on_promotion && product.promotion_price ? (
+                          <>
+                            <span className="text-xs text-muted-foreground line-through">
+                              {format(
+                                Number(product.price_uk_eu ?? product.price),
+                                Number(product.price_international ?? product.price)
+                              )}
+                            </span>
+                            <span className="font-bold text-lg text-red-600">
+                              {format(Number(product.promotion_price))}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="font-bold text-lg">
+                            {format(
+                              Number(product.price_uk_eu ?? product.price),
+                              Number(product.price_international ?? product.price)
+                            )}
+                          </span>
                         )}
-                      </span>
+                      </div>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center border rounded-md">
                           <Button
@@ -182,7 +200,9 @@ const Shop = () => {
                             }
                             const baseUkEu = Number(product.price_uk_eu ?? product.price);
                             const baseIntl = Number(product.price_international ?? product.price);
-                            const unitPrice = baseUkEu;
+                            const unitPrice = product.is_on_promotion && product.promotion_price 
+                              ? Number(product.promotion_price) 
+                              : baseUkEu;
 
                             addItem(
                               {

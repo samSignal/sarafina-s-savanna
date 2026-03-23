@@ -22,7 +22,7 @@
         
         <p>Hello,</p>
         
-        <p>Your gift card has been successfully redeemed for an order at Sarafina's Savanna.</p>
+        <p>Your gift card has been successfully redeemed for an order at Sarafina.</p>
 
         <div class="card">
             <p>Redeemed Amount:</p>
@@ -38,7 +38,7 @@
         </div>
 
         <div class="footer">
-            <p>&copy; {{ date('Y') }} Sarafina's Savanna. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} Sarafina. All rights reserved.</p>
         </div>
     </div>
 </body>

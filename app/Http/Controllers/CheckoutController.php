@@ -2,26 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Product;
+use App\Mail\GiftCardRedeemed;
+use App\Mail\OrderPlaced;
 use App\Models\DeliverySetting;
 use App\Models\GiftCard;
 use App\Models\GiftCardTransaction;
+use App\Models\Order;
+use App\Models\Product;
+use App\Services\GiftCardService;
+use App\Services\LoyaltyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\GiftCardIssued;
-use App\Mail\GiftCardRedeemed;
 use Illuminate\Support\Str;
 use Stripe\Checkout\Session as StripeSession;
 use Stripe\Coupon;
 use Stripe\Stripe;
-use App\Services\LoyaltyService;
-use App\Services\GiftCardService;
-use App\Mail\OrderPlaced;
 
 class CheckoutController extends Controller
 {
@@ -67,7 +65,7 @@ class CheckoutController extends Controller
             $rate = (float) $validated['rate'];
         } else {
             // Fallback or fetch live rate if needed, but client usually provides it
-            $rate = 1.0; 
+            $rate = 1.0;
         }
 
         $total = 0;
@@ -83,17 +81,37 @@ class CheckoutController extends Controller
             }
 
             $quantity = $item['quantity'];
-            
+
             // Determine base price (GBP)
             $baseUnitPriceGbp = $product->price_uk_eu ?? $product->price;
-            
+            $originalUnitPriceGbp = $baseUnitPriceGbp;
+            $promotionId = null;
+
+            // Check for Active Promotion
+            if ($product->is_on_promotion && $product->promotion_price > 0) {
+                // Ideally we should verify the promotion is still active, but relying on is_on_promotion flag for performance
+                // We can assume the background job or admin update keeps this in sync.
+                // However, let's try to find the active promotion if possible to link it.
+                $activePromotion = $product->promotions()->active()->first();
+
+                if ($activePromotion) {
+                    $baseUnitPriceGbp = $product->promotion_price;
+                    $promotionId = $activePromotion->id;
+                }
+            }
+
             // Determine display price in selected currency
             if ($currency === 'GBP') {
                 $displayUnitPrice = $baseUnitPriceGbp;
             } else {
                 // Let's preserve existing logic to avoid breaking pricing.
-                $baseUnitPrice = $product->price_international ?? $product->price;
-                $displayUnitPrice = $baseUnitPrice * $rate;
+                // If on promotion, we need to convert the promotion price (which is in GBP usually)
+                if ($promotionId) {
+                    $displayUnitPrice = $baseUnitPriceGbp * $rate;
+                } else {
+                    $baseUnitPrice = $product->price_international ?? $product->price;
+                    $displayUnitPrice = $baseUnitPrice * $rate;
+                }
             }
 
             $lineTotal = $displayUnitPrice * $quantity;
@@ -111,6 +129,8 @@ class CheckoutController extends Controller
                 'quantity' => $quantity,
                 'line_total' => $lineTotal, // In selected currency
                 'metadata' => array_merge($item['metadata'] ?? [], ['base_price_gbp' => $baseUnitPriceGbp]),
+                'promotion_id' => $promotionId,
+                'original_unit_price' => ($currency === 'GBP' ? $originalUnitPriceGbp : ($product->price_international ?? $product->price) * $rate),
             ];
         }
 
@@ -126,7 +146,7 @@ class CheckoutController extends Controller
             $setting = DeliverySetting::firstOrCreate(['id' => 1], ['cost' => 5.00]);
             $deliveryCostGbp = $setting->cost;
             $deliveryCost = $deliveryCostGbp * $rate;
-            
+
             $total += $deliveryCost;
             $totalGbp += $deliveryCostGbp;
             $eligibleTotalGbp += $deliveryCostGbp; // Delivery is eligible for points redemption
@@ -144,15 +164,15 @@ class CheckoutController extends Controller
             $loyaltySetting = \App\Models\LoyaltySetting::first();
             $percentage = $loyaltySetting ? ((float) $loyaltySetting->max_redemption_percentage / 100.0) : 0.30;
             $minAmount = $loyaltySetting ? (float) $loyaltySetting->min_order_amount_gbp : 0.0;
-            
+
             // Check against ELIGIBLE total
             if ($eligibleTotalGbp < $minAmount) {
                 return response()->json(['message' => 'Eligible order amount is below the minimum required to redeem points'], 422);
             }
-            
+
             // Calculate max points based on ELIGIBLE total
             $maxPoints = floor($eligibleTotalGbp * $percentage * 100);
-            
+
             if ($pointsRedeemed > $maxPoints) {
                 return response()->json(['message' => "Points redemption exceeds limit for eligible items. Max allowed: {$maxPoints}"], 422);
             }
@@ -164,17 +184,21 @@ class CheckoutController extends Controller
             // Apply Discount
             $total -= $discountAmount;
             $totalGbp -= $discountAmountGbp;
-            
+
             // Ensure non-negative
-            if ($total < 0) $total = 0;
-            if ($totalGbp < 0) $totalGbp = 0;
+            if ($total < 0) {
+                $total = 0;
+            }
+            if ($totalGbp < 0) {
+                $totalGbp = 0;
+            }
         }
 
         // Gift Card Redemption Logic
         $giftCardDiscountGbp = 0;
         $giftCardUsage = [];
 
-        if (!empty($validated['gift_card_codes'])) {
+        if (! empty($validated['gift_card_codes'])) {
             $codes = array_unique($validated['gift_card_codes']);
             $cards = GiftCard::whereIn('code', $codes)
                 ->where('status', 'active')
@@ -182,17 +206,21 @@ class CheckoutController extends Controller
                 ->get();
 
             foreach ($cards as $card) {
-                if ($card->expiry_date && now()->gt($card->expiry_date)) continue;
+                if ($card->expiry_date && now()->gt($card->expiry_date)) {
+                    continue;
+                }
 
                 $remainingOrderTotalGbp = max(0, $totalGbp - $giftCardDiscountGbp);
-                if ($remainingOrderTotalGbp <= 0) break;
+                if ($remainingOrderTotalGbp <= 0) {
+                    break;
+                }
 
                 $deductionGbp = min($remainingOrderTotalGbp, $card->balance);
                 $giftCardDiscountGbp += $deductionGbp;
 
                 $giftCardUsage[] = [
                     'card' => $card,
-                    'amount' => $deductionGbp
+                    'amount' => $deductionGbp,
                 ];
             }
         }
@@ -203,8 +231,12 @@ class CheckoutController extends Controller
         $totalGbp -= $giftCardDiscountGbp;
 
         // Ensure non-negative
-        if ($total < 0) $total = 0;
-        if ($totalGbp < 0) $totalGbp = 0;
+        if ($total < 0) {
+            $total = 0;
+        }
+        if ($totalGbp < 0) {
+            $totalGbp = 0;
+        }
 
         $order = DB::transaction(function () use ($user, $total, $totalGbp, $rate, $orderItemsData, $currency, $shippingMethod, $shippingAddress, $validated, $deliveryCost, $pointsRedeemed, $discountAmount, $giftCardDiscount, $giftCardUsage) {
             $order = Order::create([
@@ -237,13 +269,13 @@ class CheckoutController extends Controller
             }
 
             // Deduct stock for physical products
-            $physicalItems = $order->items->filter(function($item) {
+            $physicalItems = $order->items->filter(function ($item) {
                 return $item->product && $item->product->type !== 'gift_card';
             });
 
             foreach ($physicalItems as $item) {
                 $product = $item->product;
-                
+
                 // Decrease stock
                 $newStock = max(0, $product->stock - $item->quantity);
                 $product->stock = $newStock;
@@ -257,7 +289,7 @@ class CheckoutController extends Controller
                 } else {
                     $product->status = 'In Stock';
                 }
-                
+
                 $product->save();
             }
 
@@ -265,27 +297,27 @@ class CheckoutController extends Controller
             foreach ($giftCardUsage as $usage) {
                 $card = GiftCard::lockForUpdate()->find($usage['card']->id);
                 $amount = $usage['amount']; // In GBP
-                
+
                 $card->balance -= $amount;
                 if ($card->balance <= 0) {
                     $card->balance = 0; // Prevent negative floating point issues
                     $card->status = 'used';
                 }
                 $card->save();
-                
+
                 GiftCardTransaction::create([
                     'gift_card_id' => $card->id,
                     'order_id' => $order->id,
                     'amount' => $amount, // Transaction always in GBP? Yes, balances are GBP.
                     'type' => 'redemption',
-                    'description' => 'Redemption for order ' . $order->order_number,
+                    'description' => 'Redemption for order '.$order->order_number,
                 ]);
 
                 // Send redemption email
                 if ($card->purchaser && $card->purchaser->email) {
-                     Mail::to($card->purchaser->email)->send(new GiftCardRedeemed($card, $order, $amount));
+                    Mail::to($card->purchaser->email)->send(new GiftCardRedeemed($card, $order, $amount));
                 } elseif ($card->recipient_email) {
-                     Mail::to($card->recipient_email)->send(new GiftCardRedeemed($card, $order, $amount));
+                    Mail::to($card->recipient_email)->send(new GiftCardRedeemed($card, $order, $amount));
                 } else {
                     // Fallback to current user if they own the card (though RBAC might prevent others using it)
                     // But if a user adds a card to their account, they might want a notification?
@@ -299,7 +331,7 @@ class CheckoutController extends Controller
 
             return $order;
         });
-        
+
         // Handle 100% covered by gift cards/points
         if ($total <= 0) {
             $order->payment_status = 'Paid';
@@ -310,7 +342,7 @@ class CheckoutController extends Controller
             // Usually points are earned on amount paid. If paid 0, earn 0.
             // But if we want to give points on the order value covered by gift cards?
             // Usually no points on gift card redemptions.
-            
+
             return response()->json(['url' => '/client/orders']);
         }
 
@@ -375,7 +407,7 @@ class CheckoutController extends Controller
             } catch (\Throwable $e) {
                 // If coupon creation fails, proceed without Stripe-level discount
                 // This is risky as user will be overcharged. Should probably fail.
-                return response()->json(['message' => 'Failed to apply discount: ' . $e->getMessage()], 500);
+                return response()->json(['message' => 'Failed to apply discount: '.$e->getMessage()], 500);
             }
         }
 
@@ -384,8 +416,8 @@ class CheckoutController extends Controller
                 'mode' => 'payment',
                 'line_items' => $lineItems,
                 'customer_email' => $user->email,
-                'success_url' => rtrim($origin, '/') . '/my-orders?checkout=success&session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => rtrim($origin, '/') . '/cart?checkout=cancelled',
+                'success_url' => rtrim($origin, '/').'/my-orders?checkout=success&session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => rtrim($origin, '/').'/cart?checkout=cancelled',
                 'metadata' => [
                     'order_id' => $order->id,
                     'order_number' => $order->order_number,
@@ -398,7 +430,7 @@ class CheckoutController extends Controller
             $session = StripeSession::create($params);
         } catch (\Throwable $e) {
             return response()->json([
-                'message' => 'Stripe error: ' . $e->getMessage(),
+                'message' => 'Stripe error: '.$e->getMessage(),
             ], 500);
         }
 
@@ -409,6 +441,12 @@ class CheckoutController extends Controller
 
     public function confirmSession(Request $request)
     {
+        $user = $request->user();
+
+        if (! $user) {
+            return response()->json(['message' => 'Unauthenticated'], 401);
+        }
+
         $validated = $request->validate([
             'session_id' => ['required', 'string'],
         ]);
@@ -427,16 +465,29 @@ class CheckoutController extends Controller
             return response()->json(['message' => 'Unable to verify payment'], 400);
         }
 
+        if (($session->payment_status ?? null) !== 'paid') {
+            return response()->json(['message' => 'Payment not completed'], 400);
+        }
+
         $orderId = $session->metadata->order_id ?? null;
+        $sessionUserId = $session->metadata->user_id ?? null;
 
         if (! $orderId) {
             return response()->json(['message' => 'Order not found for session'], 404);
+        }
+
+        if ((string) $sessionUserId !== (string) $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         $order = Order::find($orderId);
 
         if (! $order) {
             return response()->json(['message' => 'Order not found'], 404);
+        }
+
+        if ((string) $order->user_id !== (string) $user->id) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         if ($order->payment_status === 'Paid') {
@@ -454,7 +505,7 @@ class CheckoutController extends Controller
                 app(GiftCardService::class)->issueGiftCards($order);
             } catch (\Exception $e) {
                 // Log but don't fail transaction
-                Log::error("Failed to issue gift cards for order {$order->id}: " . $e->getMessage());
+                Log::error("Failed to issue gift cards for order {$order->id}: ".$e->getMessage());
             }
 
             // Award Loyalty Points
@@ -469,7 +520,7 @@ class CheckoutController extends Controller
                     }
                 }
             } catch (\Exception $e) {
-                Log::error("Loyalty processing failed for order {$order->id}: " . $e->getMessage());
+                Log::error("Loyalty processing failed for order {$order->id}: ".$e->getMessage());
             }
 
             // Send Order Confirmation Email
@@ -477,7 +528,7 @@ class CheckoutController extends Controller
                 try {
                     Mail::to($order->user->email)->send(new OrderPlaced($order));
                 } catch (\Exception $e) {
-                    Log::error("Failed to send order confirmation email for order {$order->id}: " . $e->getMessage());
+                    Log::error("Failed to send order confirmation email for order {$order->id}: ".$e->getMessage());
                 }
             }
         });

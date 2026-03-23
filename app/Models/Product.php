@@ -23,7 +23,18 @@ class Product extends Model
         'low_stock_threshold',
         'image',
         'status',
-        'type'
+        'type',
+        'is_on_promotion',
+        'promotion_price'
+    ];
+
+    protected $casts = [
+        'is_on_promotion' => 'boolean',
+        'promotion_price' => 'decimal:2',
+        'price' => 'decimal:2',
+        'price_uk_eu' => 'decimal:2',
+        'price_international' => 'decimal:2',
+        'desired_net_price' => 'decimal:2',
     ];
 
     public function department()
@@ -34,5 +45,10 @@ class Product extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function promotions()
+    {
+        return $this->belongsToMany(Promotion::class, 'promotion_product');
     }
 }

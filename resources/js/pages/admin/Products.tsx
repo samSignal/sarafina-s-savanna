@@ -245,6 +245,10 @@ export default function Products() {
                     const updatedProd = await response.json();
                     setProducts(products.map(p => p.id === updatedProd.id ? updatedProd : p));
                     toast.success("Product updated successfully");
+                    setIsDialogOpen(false);
+                } else {
+                    const error = await response.json();
+                    toast.error(error.message || "Failed to update product");
                 }
             } else {
                 const response = await fetch('/api/products', {
@@ -259,9 +263,12 @@ export default function Products() {
                     const newProd = await response.json();
                     setProducts([newProd, ...products]);
                     toast.success("Product added successfully");
+                    setIsDialogOpen(false);
+                } else {
+                    const error = await response.json();
+                    toast.error(error.message || "Failed to add product");
                 }
             }
-            setIsDialogOpen(false);
         } catch (error) {
             console.error("Error saving product", error);
             toast.error("Failed to save product");

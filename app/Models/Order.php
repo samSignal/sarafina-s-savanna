@@ -21,6 +21,7 @@ class Order extends Model
         'total_gbp',
         'status',
         'payment_status',
+        'stripe_payment_intent_id',
         'shipping_method',
         'shipping_address_line1',
         'shipping_address_line2',
@@ -52,5 +53,10 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(Refund::class);
     }
 }

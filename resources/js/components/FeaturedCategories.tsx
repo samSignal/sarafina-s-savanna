@@ -64,11 +64,11 @@ export const FeaturedCategories = () => {
               transition={{ delay: index * 0.1 }}
               className="group relative overflow-hidden rounded-xl bg-card shadow-soft hover:shadow-medium transition-all duration-300"
             >
-              <div className="aspect-square overflow-hidden">
+              <div className="aspect-square overflow-hidden bg-white">
                 <img
                   src={category.image}
                   alt={category.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                  className="w-full h-full object-contain p-4"
                 />
               </div>
               <div className="p-5">

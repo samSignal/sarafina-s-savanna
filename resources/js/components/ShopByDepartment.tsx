@@ -2,44 +2,44 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
 
-// Fallback data in case API fails or loads
-const fallbackDepartments = [
-  { name: "Fresh Meat", href: "#" },
-  { name: "Spices", href: "#" },
-  { name: "Drinks", href: "#" },
-  { name: "Pantry", href: "#" },
-  { name: "Snacks & Chips", href: "#" },
-  { name: "Fresh Produce", href: "#" },
-  { name: "Clearance", href: "#" },
-  { name: "Shop All", href: "#" },
-];
+type DeptLink = { name: string; href: string };
 
 export const ShopByDepartment = () => {
-  const [departments, setDepartments] = useState(fallbackDepartments);
+  const [departments, setDepartments] = useState<DeptLink[]>([]);
 
   useEffect(() => {
     const fetchDepartments = async () => {
       try {
-        const response = await fetch("/api/public/departments");
-        if (response.ok) {
-          const data = await response.json();
-          // Filter only active departments and map to component format
-          const activeDepts = data
-            .filter((d: any) => d.status === "Active")
-            .map((d: any) => ({
-              name: d.name,
-              href: `/category/${d.id}` // Assuming a category page exists or using ID
-            }));
-          
-          // Always replace the fallback data when API succeeds
-          const base = activeDepts;
-          setDepartments([
-            ...base,
-            { name: "Shop All", href: "/shop" },
-          ]);
+        let depts: any[] = [];
+        const res = await fetch("/api/public/departments");
+        if (res.ok) {
+          depts = (await res.json())?.filter((d: any) => (d.status || "").toLowerCase() === "active");
         }
+        if (!depts || depts.length === 0) {
+          const resFallback = await fetch("/api/departments");
+          if (resFallback.ok) {
+            const raw = await resFallback.json();
+            depts = Array.isArray(raw) ? raw.filter((d: any) => (d.status || '').toLowerCase() === 'active') : [];
+          }
+        }
+        const links: DeptLink[] = (depts || []).map((d: any) => ({
+          name: d.name,
+          href: `/category/${d.id}`,
+        }));
+        const limited = links.slice(0, 11);
+        const extras: DeptLink[] = [
+          { name: "Promotions", href: "/promotions" },
+          { name: "Gift Cards", href: "/gift-cards" },
+          { name: "Shop All", href: "/shop" },
+        ];
+        const viewAll: DeptLink[] = links.length > 11 ? [{ name: "View All Departments", href: "/departments" }] : [];
+        setDepartments([...limited, ...extras, ...viewAll]);
       } catch (error) {
-        console.error("Failed to load departments", error);
+        setDepartments([
+          { name: "Promotions", href: "/promotions" },
+          { name: "Gift Cards", href: "/gift-cards" },
+          { name: "Shop All", href: "/shop" },
+        ]);
       }
     };
 

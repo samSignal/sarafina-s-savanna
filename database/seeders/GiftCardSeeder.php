@@ -24,7 +24,7 @@ class GiftCardSeeder extends Seeder
                 [
                     'department_id' => null, // No department association
                     'category_id' => null, // No category association
-                    'description' => "Give the gift of choice with a £{$amount} Sarafina's Savanna Gift Card.",
+                    'description' => "Give the gift of choice with a £{$amount} Sarafina Gift Card.",
                     'price' => $amount,
                     'desired_net_price' => $amount,
                     'price_uk_eu' => $amount,

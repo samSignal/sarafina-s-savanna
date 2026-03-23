@@ -29,7 +29,7 @@ class GiftCardIssued extends Mailable implements ShouldQueue
      */
     public function envelope(): Envelope
     {
-        $subject = "You've received a Gift Card from Sarafina's Savanna!";
+        $subject = "You've received a Gift Card from Sarafina!";
         
         if ($this->giftCard->sender_name) {
             $subject = $this->giftCard->sender_name . " sent you a Gift Card!";

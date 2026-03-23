@@ -17,12 +17,15 @@ class OrderItem extends Model
         'unit_price',
         'quantity',
         'line_total',
-        'metadata'
+        'metadata',
+        'promotion_id',
+        'original_unit_price'
     ];
 
     protected $casts = [
         'metadata' => 'array',
         'unit_price' => 'decimal:2',
+        'original_unit_price' => 'decimal:2',
         'line_total' => 'decimal:2',
     ];
 
@@ -33,6 +36,11 @@ class OrderItem extends Model
 
     public function product(): BelongsTo
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Product::class)->withTrashed();
+    }
+
+    public function promotion(): BelongsTo
+    {
+        return $this->belongsTo(Promotion::class);
     }
 }

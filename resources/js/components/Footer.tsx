@@ -58,12 +58,12 @@ export const Footer = () => {
                 Get exclusive offers and updates delivered to your inbox
               </p>
             </div>
-            <div className="flex w-full md:w-auto gap-3">
+            <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3">
               <Input
                 placeholder="Enter your email"
-                className="bg-primary-foreground text-foreground border-0 min-w-[250px]"
+                className="bg-primary-foreground text-foreground border-0 w-full sm:w-auto sm:min-w-[250px]"
               />
-              <Button variant="secondary" className="px-6 whitespace-nowrap">
+              <Button variant="secondary" className="w-full sm:w-auto px-6 whitespace-nowrap">
                 Subscribe
               </Button>
             </div>
@@ -81,12 +81,12 @@ export const Footer = () => {
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-accent-gradient flex items-center justify-center shadow-medium">
                   <img
                     src="/images/department%20logo/sarafina%20logo.jpeg"
-                    alt="Sarafina Market logo"
+                    alt="Sarafina logo"
                     className="w-full h-full object-contain"
                   />
                 </div>
                 <span className="font-display text-3xl md:text-4xl font-bold">
-                  Sarafina<span className="text-secondary">Market</span>
+                  Sarafina
                 </span>
               </a>
               <p className="text-primary-foreground/70 mb-6 leading-relaxed">

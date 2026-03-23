@@ -7,6 +7,12 @@ use Illuminate\Http\Request;
 
 class DepartmentController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum')->except(['index', 'show', 'publicIndex', 'publicShow']);
+        $this->middleware('permission:manage_categories')->only(['store', 'update', 'destroy']);
+    }
+
     public function index()
     {
         return Department::latest()->get();
@@ -14,9 +20,14 @@ class DepartmentController extends Controller
 
     public function publicIndex()
     {
-        return Department::where('status', 'Active')
-            ->orderBy('name')
-            ->get();
+        try {
+            return Department::where('status', 'Active')
+                ->orderBy('name')
+                ->get();
+        } catch (\Throwable $e) {
+            \Log::error('publicIndex departments failed', ['message' => $e->getMessage()]);
+            return response()->json(['message' => 'Failed to load departments', 'error' => $e->getMessage()], 500);
+        }
     }
 
     public function publicShow(Department $department)
@@ -57,6 +68,9 @@ class DepartmentController extends Controller
             'image_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
             'points_multiplier' => 'nullable|numeric|min:0',
             'loyalty_reason' => 'nullable|string',
+            'allow_refunds' => 'boolean',
+            'restock_on_refund' => 'boolean',
+            'refund_window_days' => 'integer|min:0',
         ]);
 
         if ($request->hasFile('image_file')) {
@@ -65,6 +79,9 @@ class DepartmentController extends Controller
         }
 
         $validated['points_multiplier'] = $validated['points_multiplier'] ?? 0;
+        $validated['allow_refunds'] = $validated['allow_refunds'] ?? true;
+        $validated['restock_on_refund'] = $validated['restock_on_refund'] ?? true;
+        $validated['refund_window_days'] = $validated['refund_window_days'] ?? 14;
 
         unset($validated['image_file']);
 
@@ -83,6 +100,9 @@ class DepartmentController extends Controller
             'image_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
             'points_multiplier' => 'nullable|numeric|min:0',
             'loyalty_reason' => 'nullable|string',
+            'allow_refunds' => 'boolean',
+            'restock_on_refund' => 'boolean',
+            'refund_window_days' => 'integer|min:0',
         ]);
 
         if ($request->hasFile('image_file')) {
@@ -102,5 +122,18 @@ class DepartmentController extends Controller
         $department->delete();
 
         return response()->json(['message' => 'Department deleted successfully']);
+    }
+
+    public function updateRefundRules(Request $request, Department $department)
+    {
+        $validated = $request->validate([
+            'allow_refunds' => 'required|boolean',
+            'restock_on_refund' => 'required|boolean',
+            'refund_window_days' => 'required|integer|min:0',
+        ]);
+
+        $department->update($validated);
+
+        return response()->json($department);
     }
 }
