@@ -2,11 +2,11 @@
 # You've got a Gift Card!
 
 @if($giftCard->sender_name)
-**{{ $giftCard->sender_name }}** sent you a Sarafina's Savanna Gift Card!
+**{{ $giftCard->sender_name }}** sent you a Sarafina Gift Card!
 @elseif($giftCard->purchaser)
-**{{ $giftCard->purchaser->name }}** sent you a Sarafina's Savanna Gift Card!
+**{{ $giftCard->purchaser->name }}** sent you a Sarafina Gift Card!
 @else
-You have received a Sarafina's Savanna Gift Card!
+You have received a Sarafina Gift Card!
 @endif
 
 @if($giftCard->message)

@@ -2,17 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
-use App\Models\GiftCard;
-use App\Models\GiftCardTransaction;
-use App\Services\LoyaltyService;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
 use App\Mail\OrderPlaced;
+use App\Models\Order;
+use App\Models\Refund;
 use App\Services\GiftCardService;
+use App\Services\LoyaltyService;
+use App\Services\RefundService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\GiftCardIssued;
 use Stripe\Event as StripeEvent;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\Webhook;
@@ -38,6 +36,16 @@ class StripeWebhookController extends Controller
                 return response()->json(['message' => 'Invalid signature'], 400);
             }
         } else {
+            if (! app()->environment('local')) {
+                Log::error('Stripe webhook secret is not configured');
+
+                return response()->json(['message' => 'Webhook is not configured'], 500);
+            }
+
+            if (! $sigHeader) {
+                return response()->json(['message' => 'Missing signature'], 400);
+            }
+
             $data = json_decode($payload, true);
 
             if (! is_array($data)) {
@@ -48,52 +56,124 @@ class StripeWebhookController extends Controller
         }
 
         if ($event->type === 'checkout.session.completed') {
-            /** @var \Stripe\Checkout\Session $session */
-            $session = $event->data->object;
-            $orderId = $session->metadata->order_id ?? null;
+            $this->handleCheckoutSessionCompleted($event->data->object);
+        }
 
-            if ($orderId) {
-                $order = Order::find($orderId);
-
-                if ($order) {
-                    if ($order->payment_status === 'Paid') {
-                        return response()->json(['received' => true]);
-                    }
-
-                    $order->update([
-                        'status' => 'Completed',
-                        'payment_status' => 'Paid',
-                    ]);
-
-                    try {
-                        app(GiftCardService::class)->issueGiftCards($order);
-                    } catch (\Exception $e) {
-                        Log::error("Gift Card creation failed for order {$order->id}: " . $e->getMessage());
-                    }
-
-                    try {
-                        $loyaltyService = app(LoyaltyService::class);
-                        $loyaltyService->awardPoints($order);
-
-                        if ($order->points_redeemed > 0) {
-                            $user = $order->user;
-                            if ($user) {
-                                $loyaltyService->redeemPoints($user, $order->points_redeemed, $order);
-                            }
-                        }
-
-                        // Send Order Confirmation Email
-                        if ($order->user && $order->user->email) {
-                            Mail::to($order->user->email)->send(new OrderPlaced($order));
-                        }
-                    } catch (\Exception $e) {
-                        Log::error("Loyalty processing failed for order {$order->id}: " . $e->getMessage());
-                    }
-                }
-            }
+        if ($event->type === 'charge.refunded') {
+            $this->handleChargeRefunded($event->data->object);
         }
 
         return response()->json(['received' => true]);
     }
-}
 
+    protected function handleCheckoutSessionCompleted($session)
+    {
+        $orderId = $session->metadata->order_id ?? null;
+
+        if ($orderId) {
+            $order = Order::find($orderId);
+
+            if ($order) {
+                if ($order->payment_status === 'Paid') {
+                    return;
+                }
+
+                $order->update([
+                    'status' => 'Completed',
+                    'payment_status' => 'Paid',
+                    'stripe_payment_intent_id' => $session->payment_intent,
+                ]);
+
+                try {
+                    app(GiftCardService::class)->issueGiftCards($order);
+                } catch (\Exception $e) {
+                    Log::error("Gift Card creation failed for order {$order->id}: ".$e->getMessage());
+                }
+
+                try {
+                    $loyaltyService = app(LoyaltyService::class);
+                    $loyaltyService->awardPoints($order);
+
+                    if ($order->points_redeemed > 0) {
+                        $user = $order->user;
+                        if ($user) {
+                            $loyaltyService->redeemPoints($user, $order->points_redeemed, $order);
+                        }
+                    }
+
+                    // Send Order Confirmation Email
+                    if ($order->user && $order->user->email) {
+                        Mail::to($order->user->email)->send(new OrderPlaced($order));
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Loyalty processing failed for order {$order->id}: ".$e->getMessage());
+                }
+            }
+        }
+    }
+
+    protected function handleChargeRefunded($charge)
+    {
+        $paymentIntentId = $charge->payment_intent;
+        $amountRefunded = $charge->amount_refunded / 100; // Convert cents to main currency unit
+        $stripeRefund = $charge->refunds->data[0] ?? null; // Get latest refund object if possible
+        $refundId = $stripeRefund->id ?? null;
+
+        // Find Order by Payment Intent
+        $order = Order::where('stripe_payment_intent_id', $paymentIntentId)->first();
+
+        if ($order && $stripeRefund) {
+            // Check if we already have this refund recorded (by Stripe Refund ID)
+            // If the refund was initiated by our system, we stored the ID.
+            // If initiated externally, we won't find it.
+
+            // Check for metadata first (Internal Refund)
+            $internalRefundId = $stripeRefund->metadata->refund_id ?? null;
+            $existingRefund = null;
+
+            if ($internalRefundId) {
+                $existingRefund = Refund::find($internalRefundId);
+                // If found, ensure stripe_refund_id is set
+                if ($existingRefund) {
+                    if (! $existingRefund->stripe_refund_id) {
+                        $existingRefund->stripe_refund_id = $stripeRefund->id;
+                        $existingRefund->save();
+                    }
+                }
+            } else {
+                // If no metadata, try to find by stripe_refund_id
+                $existingRefund = Refund::where('stripe_refund_id', $stripeRefund->id)->first();
+            }
+
+            if (! $existingRefund) {
+                // Create new Refund record for external refund
+                // We don't know the items, so we just record the amount.
+                // And we should probably deduct loyalty points.
+
+                try {
+                    // Use a service method or direct creation?
+                    // Direct creation to avoid circular dependency or complex logic for items.
+
+                    $refund = Refund::create([
+                        'order_id' => $order->id,
+                        'stripe_refund_id' => $stripeRefund->id,
+                        'amount' => $stripeRefund->amount / 100,
+                        'reason' => 'External Stripe Refund',
+                        'status' => 'processed',
+                        'admin_id' => null, // System
+                        'notes' => 'Detected via Webhook',
+                    ]);
+
+                    // Deduct Loyalty
+                    $refundService = app(RefundService::class);
+                    $refundService->deductLoyaltyPoints($order, $refund->amount);
+
+                    Log::info("External refund recorded for Order #{$order->order_number}");
+
+                } catch (\Exception $e) {
+                    Log::error("Failed to record external refund for Order #{$order->order_number}: ".$e->getMessage());
+                }
+            }
+        }
+    }
+}

@@ -7,6 +7,12 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum')->except(['index', 'show', 'publicIndex']);
+        $this->middleware('permission:manage_categories')->only(['store', 'update', 'destroy']);
+    }
+
     public function index()
     {
         return Category::with('department')->latest()->get();
@@ -14,13 +20,18 @@ class CategoryController extends Controller
 
     public function publicIndex()
     {
-        return Category::with('department')
-            ->where('status', 'Active')
-            ->whereHas('department', function ($query) {
-                $query->where('status', 'Active');
-            })
-            ->orderBy('name')
-            ->get();
+        try {
+            return Category::with('department')
+                ->where('status', 'Active')
+                ->whereHas('department', function ($query) {
+                    $query->where('status', 'Active');
+                })
+                ->orderBy('name')
+                ->get();
+        } catch (\Throwable $e) {
+            \Log::error('publicIndex categories failed', ['message' => $e->getMessage()]);
+            return response()->json(['message' => 'Failed to load categories', 'error' => $e->getMessage()], 500);
+        }
     }
 
     public function store(Request $request)

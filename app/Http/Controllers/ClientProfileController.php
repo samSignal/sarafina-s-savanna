@@ -140,6 +140,7 @@ class ClientProfileController extends Controller
                     'estimated_delivery_date' => $order->estimated_delivery_date,
                     'payment_status' => $order->payment_status,
                     'total' => (float) $order->total,
+                    'refunded_amount' => (float) $order->refunds->where('status', 'processed')->sum('amount'),
                     'currency' => $order->currency,
                     'created_at' => $order->created_at,
                 ];

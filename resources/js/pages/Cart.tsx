@@ -25,6 +25,8 @@ interface LiveProduct {
   stock: number;
   status: string;
   type?: string;
+  is_on_promotion?: boolean;
+  promotion_price?: number;
 }
 
 const Cart = () => {
@@ -102,7 +104,13 @@ const Cart = () => {
           // Sync all cart items that match this product ID
           const matchingItems = items.filter((item) => item.id === product.id);
           matchingItems.forEach((inCart) => {
-            const ukPrice = Number(product.price_uk_eu ?? product.price);
+            let ukPrice = Number(product.price_uk_eu ?? product.price);
+            
+            // Check for promotion
+            if (product.is_on_promotion && product.promotion_price) {
+                ukPrice = Number(product.promotion_price);
+            }
+
             if (inCart.price !== ukPrice || inCart.name !== product.name || inCart.image !== product.image) {
               updateItem(inCart.cartItemId, {
                 price: ukPrice,
@@ -138,13 +146,19 @@ const Cart = () => {
 
   const subtotalUk = items.reduce((sum, item) => {
     const live = liveMap.get(item.id);
-    const uk = live ? Number(live.price_uk_eu ?? live.price) : item.price;
+    let uk = live ? Number(live.price_uk_eu ?? live.price) : item.price;
+    if (live?.is_on_promotion && live.promotion_price) {
+        uk = Number(live.promotion_price);
+    }
     return sum + uk * item.quantity;
   }, 0);
 
   const subtotalIntl = items.reduce((sum, item) => {
     const live = liveMap.get(item.id);
-    const intl = live ? Number(live.price_international ?? live.price) : item.price;
+    let intl = live ? Number(live.price_international ?? live.price) : item.price;
+    if (live?.is_on_promotion && live.promotion_price) {
+        intl = Number(live.promotion_price);
+    }
     return sum + intl * item.quantity;
   }, 0);
 

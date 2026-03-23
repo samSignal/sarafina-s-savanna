@@ -33,7 +33,7 @@ export const Testimonials = () => {
             What Our Customers Are Saying
           </h2>
           <p className="text-primary-foreground/80 max-w-2xl mx-auto">
-            Join thousands of satisfied customers who trust Sarafina Foods for their African food needs
+            Join thousands of satisfied customers who trust Sarafina for their African food needs
           </p>
         </motion.div>
 

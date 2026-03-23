@@ -7,6 +7,12 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:sanctum')->except(['index', 'show', 'publicIndex']);
+        $this->middleware('permission:manage_products')->only(['store', 'update', 'destroy', 'updateStock']);
+    }
+
     public function index()
     {
         return Product::with(['department', 'category'])->latest()->get();
@@ -14,19 +20,24 @@ class ProductController extends Controller
 
     public function publicIndex()
     {
-        return Product::with(['department', 'category'])
-            ->where('type', '!=', 'gift_card')
-            ->whereHas('department', function ($query) {
-                $query->where('status', 'Active');
-            })
-            ->where(function ($query) {
-                $query->whereNull('category_id')
-                    ->orWhereHas('category', function ($categoryQuery) {
-                        $categoryQuery->where('status', 'Active');
-                    });
-            })
-            ->latest()
-            ->get();
+        try {
+            return Product::with(['department', 'category'])
+                ->where('type', '!=', 'gift_card')
+                ->whereHas('department', function ($query) {
+                    $query->where('status', 'Active');
+                })
+                ->where(function ($query) {
+                    $query->whereNull('category_id')
+                        ->orWhereHas('category', function ($categoryQuery) {
+                            $categoryQuery->where('status', 'Active');
+                        });
+                })
+                ->latest()
+                ->get();
+        } catch (\Throwable $e) {
+            \Log::error('publicIndex products failed', ['message' => $e->getMessage()]);
+            return response()->json(['message' => 'Failed to load products', 'error' => $e->getMessage()], 500);
+        }
     }
 
     public function store(Request $request)

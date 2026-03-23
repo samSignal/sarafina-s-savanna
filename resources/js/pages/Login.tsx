@@ -29,7 +29,19 @@ const Login = () => {
       toast.success("Signed in successfully");
       const redirect = searchParams.get("redirect");
       
-      if (user.role === 'admin' || user.role === 'super_admin') {
+      // Check for any admin/staff role (not customer)
+      // Robust check for legacy role column AND new role system
+      // Treat anyone who is NOT a customer as staff/employee
+      const role = (user.role || "").toLowerCase();
+      const roleName = (user.role_name || "").toLowerCase();
+      
+      const isStaff = 
+        role === 'admin' || 
+        role === 'super_admin' ||
+        (roleName && roleName !== 'customer' && roleName !== 'client') ||
+        (role && role !== 'customer' && role !== 'client');
+
+      if (isStaff) {
         navigate("/admin");
       } else {
         navigate(redirect || "/");

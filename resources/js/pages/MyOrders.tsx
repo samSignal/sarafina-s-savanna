@@ -7,6 +7,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { RefundRequestDialog } from "@/components/RefundRequestDialog";
 import { toast } from "sonner";
 
 interface OrderItem {
@@ -97,6 +98,8 @@ const MyOrders = () => {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+                Accept: "application/json",
               },
               body: JSON.stringify({ session_id: sessionId }),
             });
@@ -125,7 +128,7 @@ const MyOrders = () => {
     };
 
     handle();
-  }, [searchParams, setSearchParams, clearCart]);
+  }, [searchParams, setSearchParams, clearCart, token]);
 
   const formatDate = (value: string) =>
     new Date(value).toLocaleString(undefined, {
@@ -207,7 +210,10 @@ const MyOrders = () => {
                           {Number(order.total).toFixed(2)}
                         </p>
                         <div className="flex flex-col gap-1 items-end mt-1">
-                          <div className="flex gap-2 justify-end">
+                          <div className="flex gap-2 justify-end items-center">
+                            {order.payment_status === 'paid' && (
+                              <RefundRequestDialog order={order} />
+                            )}
                             <Badge variant="outline">
                               {order.status}
                             </Badge>

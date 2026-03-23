@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Notifications\QueuedVerifyEmail;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -35,6 +36,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'role',
+        'role_id',
         'points_balance',
         'birthday',
         'last_activity_at',
@@ -73,5 +75,43 @@ class User extends Authenticatable implements MustVerifyEmail
     public function loyaltyTransactions(): HasMany
     {
         return $this->hasMany(LoyaltyTransaction::class);
+    }
+
+    public function roleDefinition(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    /**
+     * Check if user has a specific role
+     */
+    public function hasRole(string $roleName): bool
+    {
+        if ($this->role_id) {
+            return $this->roleDefinition->name === $roleName;
+        }
+        return $this->role === $roleName;
+    }
+
+    /**
+     * Check if user has a specific permission
+     */
+    public function hasPermission(string $permissionName): bool
+    {
+        if (!$this->role_id) {
+            // Fallback for legacy admin role
+            if ($this->role === 'admin' || $this->role === 'super_admin') {
+                return true; // Admin has all permissions
+            }
+            return false;
+        }
+
+        // Safety check if role exists
+        if (!$this->roleDefinition) {
+            return false;
+        }
+
+        // Check if role has permission
+        return $this->roleDefinition->permissions->contains('name', $permissionName);
     }
 }

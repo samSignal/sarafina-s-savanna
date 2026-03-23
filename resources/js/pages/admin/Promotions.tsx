@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, Filter, MoreHorizontal, Edit, Trash, Tag, Percent, Calendar } from "lucide-react";
@@ -10,59 +10,154 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-// Mock data
-const initialPromotions = [
-    { id: 1, code: "WELCOME20", type: "Percentage", value: 20, description: "20% off for new customers", usage: 145, status: "Active", startDate: "2024-01-01", endDate: "2024-12-31" },
-    { id: 2, code: "FREESHIP", type: "Fixed Amount", value: 0, description: "Free shipping on orders over £50", usage: 89, status: "Active", startDate: "2024-03-01", endDate: "2024-06-30" },
-    { id: 3, code: "SUMMER10", type: "Percentage", value: 10, description: "Summer sale discount", usage: 0, status: "Scheduled", startDate: "2024-06-01", endDate: "2024-08-31" },
-    { id: 4, code: "FLASH50", type: "Percentage", value: 50, description: "Flash sale clearance", usage: 320, status: "Expired", startDate: "2024-02-14", endDate: "2024-02-15" },
-];
+interface Product {
+    id: number;
+    name: string;
+    price: number;
+    image_url?: string;
+}
+
+interface Promotion {
+    id: number;
+    name: string;
+    description: string;
+    type: 'product' | 'holiday' | 'flash';
+    discount_percentage: number;
+    start_date: string;
+    end_date: string;
+    is_active: boolean;
+    products?: Product[];
+    order_items_count?: number;
+    order_items_sum_line_total?: number;
+}
 
 export default function Promotions() {
-    const [promotions, setPromotions] = useState(initialPromotions);
+    const { token } = useAuth();
+    const [promotions, setPromotions] = useState<Promotion[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     
     // Form state
     const [newPromo, setNewPromo] = useState({ 
-        code: "", 
-        type: "Percentage", 
-        value: "", 
+        name: "", 
+        type: "product", 
+        discount_percentage: "", 
         description: "", 
-        startDate: "", 
-        endDate: "",
-        status: "Active" 
+        start_date: "", 
+        end_date: "",
+        product_ids: [] as number[]
     });
 
-    const handleCreatePromo = () => {
-        if (!newPromo.code || !newPromo.value) {
-            toast.error("Please fill in all required fields");
+    const fetchPromotions = async () => {
+        try {
+            const response = await fetch('/api/admin/promotions', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setPromotions(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch promotions', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchProducts = async () => {
+        try {
+            const res = await fetch('/api/products', {
+                 headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                 const data = await res.json();
+                 setProducts(Array.isArray(data) ? data : data.data || []);
+            }
+        } catch (error) {
+            console.error("Failed to fetch products", error);
+        }
+    };
+
+    useEffect(() => {
+        if (token) {
+            fetchPromotions();
+            fetchProducts();
+        }
+    }, [token]);
+
+    const handleCreatePromo = async () => {
+        if (!newPromo.name || !newPromo.discount_percentage || newPromo.product_ids.length === 0) {
+            toast.error("Please fill in name, discount, and select at least one product");
             return;
         }
 
-        const promo = {
-            id: promotions.length + 1,
-            ...newPromo,
-            value: parseFloat(newPromo.value),
-            usage: 0
-        };
+        try {
+            const response = await fetch('/api/admin/promotions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(newPromo)
+            });
 
-        setPromotions([promo, ...promotions]);
-        setIsCreateOpen(false);
-        setNewPromo({ code: "", type: "Percentage", value: "", description: "", startDate: "", endDate: "", status: "Active" });
-        toast.success("Promotion created successfully");
+            if (response.ok) {
+                toast.success("Promotion created successfully");
+                setIsCreateOpen(false);
+                setNewPromo({ name: "", type: "product", discount_percentage: "", description: "", start_date: "", end_date: "", product_ids: [] });
+                fetchPromotions();
+            } else {
+                const error = await response.json();
+                toast.error(error.message || "Failed to create promotion");
+            }
+        } catch (error) {
+            toast.error("An error occurred");
+        }
     };
 
-    const handleDelete = (id: number) => {
-        setPromotions(promotions.filter(p => p.id !== id));
-        toast.success("Promotion deleted");
+    const handleDelete = async (id: number) => {
+        if (!confirm("Are you sure?")) return;
+        try {
+            const response = await fetch(`/api/admin/promotions/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                setPromotions(promotions.filter(p => p.id !== id));
+                toast.success("Promotion deleted");
+            }
+        } catch (error) {
+            toast.error("Failed to delete");
+        }
     };
 
     const filteredPromotions = promotions.filter(promo => 
-        promo.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        promo.description.toLowerCase().includes(searchQuery.toLowerCase())
+        promo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        promo.description?.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const toggleProductSelection = (productId: number) => {
+        setNewPromo(prev => {
+            const ids = prev.product_ids.includes(productId) 
+                ? prev.product_ids.filter(id => id !== productId)
+                : [...prev.product_ids, productId];
+            return { ...prev, product_ids: ids };
+        });
+    };
+    
+    const selectAllProducts = () => {
+        if (newPromo.product_ids.length === products.length) {
+            setNewPromo(prev => ({ ...prev, product_ids: [] }));
+        } else {
+            setNewPromo(prev => ({ ...prev, product_ids: products.map(p => p.id) }));
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -77,7 +172,7 @@ export default function Promotions() {
                             <Plus className="mr-2 h-4 w-4" /> Create Promotion
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[500px]">
+                    <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
                         <DialogHeader>
                             <DialogTitle>Create New Promotion</DialogTitle>
                             <DialogDescription>
@@ -86,39 +181,39 @@ export default function Promotions() {
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
                             <div className="grid gap-2">
-                                <Label htmlFor="code">Promo Code</Label>
+                                <Label htmlFor="name">Promotion Name</Label>
                                 <Input 
-                                    id="code" 
-                                    placeholder="e.g., SUMMER2024" 
-                                    className="uppercase"
-                                    value={newPromo.code}
-                                    onChange={(e) => setNewPromo({...newPromo, code: e.target.value.toUpperCase()})}
+                                    id="name" 
+                                    placeholder="e.g., Summer Sale 2024" 
+                                    value={newPromo.name}
+                                    onChange={(e) => setNewPromo({...newPromo, name: e.target.value})}
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="type">Discount Type</Label>
+                                    <Label htmlFor="type">Type</Label>
                                     <Select 
                                         value={newPromo.type} 
-                                        onValueChange={(value) => setNewPromo({...newPromo, type: value})}
+                                        onValueChange={(val) => setNewPromo({...newPromo, type: val as any})}
                                     >
-                                        <SelectTrigger>
-                                            <SelectValue />
+                                        <SelectTrigger id="type">
+                                            <SelectValue placeholder="Select type" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Percentage">Percentage (%)</SelectItem>
-                                            <SelectItem value="Fixed Amount">Fixed Amount (£)</SelectItem>
+                                            <SelectItem value="product">Product Discount</SelectItem>
+                                            <SelectItem value="holiday">Holiday Special</SelectItem>
+                                            <SelectItem value="flash">Flash Sale</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="value">Value</Label>
+                                    <Label htmlFor="discount">Discount Percentage (%)</Label>
                                     <Input 
-                                        id="value" 
-                                        type="number" 
+                                        id="discount" 
+                                        type="number"
                                         placeholder="20" 
-                                        value={newPromo.value}
-                                        onChange={(e) => setNewPromo({...newPromo, value: e.target.value})}
+                                        value={newPromo.discount_percentage}
+                                        onChange={(e) => setNewPromo({...newPromo, discount_percentage: e.target.value})}
                                     />
                                 </div>
                             </div>
@@ -126,30 +221,58 @@ export default function Promotions() {
                                 <Label htmlFor="description">Description</Label>
                                 <Input 
                                     id="description" 
-                                    placeholder="Internal note or customer facing description" 
+                                    placeholder="Internal note or customer facing text" 
                                     value={newPromo.description}
                                     onChange={(e) => setNewPromo({...newPromo, description: e.target.value})}
                                 />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="startDate">Start Date</Label>
+                                    <Label htmlFor="start_date">Start Date</Label>
                                     <Input 
-                                        id="startDate" 
-                                        type="date" 
-                                        value={newPromo.startDate}
-                                        onChange={(e) => setNewPromo({...newPromo, startDate: e.target.value})}
+                                        id="start_date" 
+                                        type="datetime-local"
+                                        value={newPromo.start_date}
+                                        onChange={(e) => setNewPromo({...newPromo, start_date: e.target.value})}
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="endDate">End Date</Label>
+                                    <Label htmlFor="end_date">End Date</Label>
                                     <Input 
-                                        id="endDate" 
-                                        type="date" 
-                                        value={newPromo.endDate}
-                                        onChange={(e) => setNewPromo({...newPromo, endDate: e.target.value})}
+                                        id="end_date" 
+                                        type="datetime-local"
+                                        value={newPromo.end_date}
+                                        onChange={(e) => setNewPromo({...newPromo, end_date: e.target.value})}
                                     />
                                 </div>
+                            </div>
+
+                            <div className="grid gap-2">
+                                <div className="flex justify-between items-center">
+                                    <Label>Select Products</Label>
+                                    <Button variant="ghost" size="sm" onClick={selectAllProducts}>
+                                        {newPromo.product_ids.length === products.length ? "Deselect All" : "Select All"}
+                                    </Button>
+                                </div>
+                                <ScrollArea className="h-[200px] border rounded-md p-4">
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {products.map(product => (
+                                            <div key={product.id} className="flex items-center space-x-2">
+                                                <Checkbox 
+                                                    id={`product-${product.id}`} 
+                                                    checked={newPromo.product_ids.includes(product.id)}
+                                                    onCheckedChange={() => toggleProductSelection(product.id)}
+                                                />
+                                                <Label htmlFor={`product-${product.id}`} className="text-sm font-normal cursor-pointer flex-1">
+                                                    {product.name} - £{product.price}
+                                                </Label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                                <p className="text-sm text-muted-foreground">
+                                    Selected: {newPromo.product_ids.length} products
+                                </p>
                             </div>
                         </div>
                         <DialogFooter>
@@ -160,126 +283,80 @@ export default function Promotions() {
                 </Dialog>
             </div>
 
-            {/* Stats Overview */}
-            <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Promotions</CardTitle>
-                        <Tag className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{promotions.filter(p => p.status === "Active").length}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Redemptions</CardTitle>
-                        <Percent className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{promotions.reduce((acc, curr) => acc + curr.usage, 0)}</div>
-                        <p className="text-xs text-muted-foreground">Across all campaigns</p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Scheduled</CardTitle>
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{promotions.filter(p => p.status === "Scheduled").length}</div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="flex items-center justify-between gap-4 bg-white p-4 rounded-lg border shadow-sm">
-                <div className="flex items-center gap-2 flex-1 max-w-sm">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                        <Input 
-                            placeholder="Search promotions..." 
-                            className="pl-8" 
+            <Card>
+                <CardHeader>
+                    <CardTitle>Active Promotions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center py-4">
+                        <Input
+                            placeholder="Search promotions..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
+                            className="max-w-sm"
                         />
                     </div>
-                    <Button variant="outline" size="icon">
-                        <Filter className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
-
-            <div className="border rounded-md bg-white shadow-sm">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Code</TableHead>
-                            <TableHead>Discount</TableHead>
-                            <TableHead>Usage</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Duration</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredPromotions.map((promo) => (
-                            <TableRow key={promo.id}>
-                                <TableCell className="font-mono font-bold">
-                                    <div className="flex flex-col">
-                                        <span>{promo.code}</span>
-                                        <span className="text-xs font-normal text-muted-foreground">{promo.description}</span>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                    <Badge variant="outline" className="bg-slate-50">
-                                        {promo.type === "Percentage" ? `${promo.value}% OFF` : `£${promo.value} OFF`}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell>{promo.usage} uses</TableCell>
-                                <TableCell>
-                                    <Badge variant={
-                                        promo.status === "Active" ? "default" : 
-                                        promo.status === "Scheduled" ? "secondary" : 
-                                        "destructive"
-                                    } className={
-                                        promo.status === "Active" ? "bg-green-100 text-green-800 hover:bg-green-200 border-green-200" : 
-                                        promo.status === "Scheduled" ? "bg-blue-100 text-blue-800 hover:bg-blue-200 border-blue-200" : 
-                                        "bg-slate-100 text-slate-800 hover:bg-slate-200 border-slate-200"
-                                    }>
-                                        {promo.status}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="text-sm text-muted-foreground">
-                                    {promo.startDate} — {promo.endDate}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                                <span className="sr-only">Open menu</span>
-                                                <MoreHorizontal className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                            <DropdownMenuItem>
-                                                <Edit className="mr-2 h-4 w-4" /> Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem 
-                                                className="text-destructive focus:text-destructive"
-                                                onClick={() => handleDelete(promo.id)}
-                                            >
-                                                <Trash className="mr-2 h-4 w-4" /> Delete
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Discount</TableHead>
+                                    <TableHead>Stats</TableHead>
+                                    <TableHead>Dates</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center h-24">Loading...</TableCell>
+                                    </TableRow>
+                                ) : filteredPromotions.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-center h-24">No promotions found.</TableCell>
+                                    </TableRow>
+                                ) : (
+                                    filteredPromotions.map((promo) => (
+                                        <TableRow key={promo.id}>
+                                            <TableCell className="font-medium">
+                                                {promo.name}
+                                                <div className="text-xs text-muted-foreground">{promo.description}</div>
+                                            </TableCell>
+                                            <TableCell className="capitalize">{promo.type}</TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary">{promo.discount_percentage}%</Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col text-sm">
+                                                    <span className="font-medium">{promo.order_items_count || 0} Sales</span>
+                                                    <span className="text-muted-foreground">£{Number(promo.order_items_sum_line_total || 0).toFixed(2)} Rev</span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-sm">
+                                                <div>{promo.start_date ? new Date(promo.start_date).toLocaleDateString() : 'Now'} - </div>
+                                                <div>{promo.end_date ? new Date(promo.end_date).toLocaleDateString() : 'Forever'}</div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={promo.is_active ? "default" : "destructive"}>
+                                                    {promo.is_active ? "Active" : "Inactive"}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(promo.id)}>
+                                                    <Trash className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }

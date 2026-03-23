@@ -9,9 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Phone, MapPin, ShoppingCart, Wallet, Star, Gift, MessageCircle, Copy, Check, History, Loader2, Send } from "lucide-react";
+import { Mail, Phone, MapPin, ShoppingCart, Wallet, Star, Gift, MessageCircle, Copy, Check, History, Loader2, Send, Info } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { RefundPolicyTab } from "@/components/account/RefundPolicyTab";
+import { ClientRefundDialog } from "@/components/account/ClientRefundDialog";
 
 interface Address {
   line1: string | null;
@@ -43,6 +45,7 @@ interface Order {
   delivery_status: string | null;
   estimated_delivery_date: string | null;
   total: number;
+  refunded_amount?: number;
   currency: string;
   created_at: string;
 }
@@ -112,6 +115,42 @@ const Account = () => {
   const [selectedCardTransactions, setSelectedCardTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [selectedCardCode, setSelectedCardCode] = useState("");
+  
+  // Refund Dialog State
+  const [refundOrder, setRefundOrder] = useState<any>(null);
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false);
+  const [loadingRefundOrder, setLoadingRefundOrder] = useState<number | null>(null);
+
+  const handleRequestRefund = async (orderId: number) => {
+    setLoadingRefundOrder(orderId);
+    try {
+      const response = await fetch(`/api/client/orders/${orderId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const orderData = await response.json();
+        // Ensure items have product_name and numeric values
+        const mappedOrder = {
+            ...orderData,
+            items: orderData.items.map((item: any) => ({
+                ...item,
+                product_name: item.product?.name || item.product_name || "Unknown Product",
+                unit_price: Number(item.unit_price),
+                line_total: Number(item.line_total)
+            }))
+        };
+        setRefundOrder(mappedOrder);
+        setRefundDialogOpen(true);
+      } else {
+        toast.error("Failed to load order details");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("An error occurred");
+    } finally {
+      setLoadingRefundOrder(null);
+    }
+  };
 
   const handleViewTransactions = async (card: GiftCard) => {
     setSelectedCardCode(card.code);
@@ -394,6 +433,7 @@ const Account = () => {
                     <TabsTrigger value="purchased-gift-cards">Sent Gift Cards</TabsTrigger>
                     <TabsTrigger value="stokvel">Stokvel / Savings</TabsTrigger>
                     <TabsTrigger value="messages">Messages Sent</TabsTrigger>
+                    <TabsTrigger value="refund-policy">Refund Policy</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="personal">
@@ -441,6 +481,21 @@ const Account = () => {
                   </TabsContent>
 
                   <TabsContent value="orders">
+                    <Card className="mb-6 bg-blue-50/50 border-blue-100">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Info className="h-4 w-4 text-blue-600" />
+                          How to Request a Refund
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="text-sm space-y-1 text-muted-foreground">
+                        <p>1. Go to your <strong>Order History</strong> tab (you are here).</p>
+                        <p>2. Select the order containing the item you wish to return.</p>
+                        <p>3. Click the <strong>Request Refund</strong> button (if eligible).</p>
+                        <p>4. Select items and provide a reason for the return.</p>
+                      </CardContent>
+                    </Card>
+
                     {data.orders.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         You do not have any orders yet.
@@ -456,6 +511,7 @@ const Account = () => {
                               <TableHead>Delivery</TableHead>
                               <TableHead>Payment</TableHead>
                               <TableHead>Total</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -494,10 +550,36 @@ const Account = () => {
                                     <Badge variant="secondary">Collection</Badge>
                                   )}
                                 </TableCell>
-                                <TableCell>{order.payment_status}</TableCell>
+                                <TableCell>
+                                  <Badge variant={
+                                    order.payment_status.toLowerCase() === 'paid' ? 'default' : 
+                                    ['refunded', 'partially_refunded'].includes(order.payment_status.toLowerCase()) ? 'destructive' : 
+                                    'outline'
+                                  }>
+                                    {order.payment_status}
+                                  </Badge>
+                                  {order.refunded_amount !== undefined && order.refunded_amount > 0 && (
+                                     <div className="text-xs text-red-500 font-medium mt-1">
+                                       Refunded: {currencySymbol(order.currency)}{order.refunded_amount.toFixed(2)}
+                                     </div>
+                                   )}
+                                </TableCell>
                                 <TableCell>
                                   {currencySymbol(order.currency)}
                                   {order.total.toFixed(2)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {['Paid', 'paid'].includes(order.payment_status) && order.status !== 'Cancelled' && (
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => handleRequestRefund(order.id)}
+                                      disabled={loadingRefundOrder === order.id}
+                                    >
+                                      {loadingRefundOrder === order.id && <Loader2 className="mr-2 h-3 w-3 animate-spin" />}
+                                      Request Refund
+                                    </Button>
+                                  )}
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -739,6 +821,9 @@ const Account = () => {
                       </div>
                     )}
                   </TabsContent>
+                  <TabsContent value="refund-policy">
+                    <RefundPolicyTab />
+                  </TabsContent>
                 </Tabs>
               </CardContent>
             </Card>
@@ -785,6 +870,17 @@ const Account = () => {
               </div>
           </DialogContent>
       </Dialog>
+
+      {/* Refund Dialog */}
+      <ClientRefundDialog 
+        order={refundOrder}
+        open={refundDialogOpen}
+        onOpenChange={setRefundDialogOpen}
+        onSuccess={() => {
+            // Optionally reload profile data to update status or history
+            setRefundDialogOpen(false);
+        }}
+      />
     </div>
   );
 };

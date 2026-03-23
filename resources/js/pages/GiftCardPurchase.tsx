@@ -132,7 +132,7 @@ const GiftCardPurchase = () => {
         <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
                 <h1 className="text-4xl font-display font-bold text-primary mb-4">
-                    Give the Gift of Sarafina's
+                    Give the Gift of Sarafina
                 </h1>
                 <p className="text-lg text-muted-foreground">
                     Digital gift cards for your friends and family. Delivered instantly via email.

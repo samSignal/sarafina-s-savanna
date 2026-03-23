@@ -10,10 +10,23 @@ class Department extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'description', 'status', 'image', 'points_multiplier', 'loyalty_reason'];
+    protected $fillable = [
+        'name', 
+        'description', 
+        'status', 
+        'image', 
+        'points_multiplier', 
+        'loyalty_reason',
+        'allow_refunds',
+        'restock_on_refund',
+        'refund_window_days'
+    ];
 
     protected $casts = [
         'points_multiplier' => 'decimal:2',
+        'allow_refunds' => 'boolean',
+        'restock_on_refund' => 'boolean',
+        'refund_window_days' => 'integer',
     ];
 
     public function categories()
