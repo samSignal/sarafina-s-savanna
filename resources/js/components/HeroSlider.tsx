@@ -57,7 +57,14 @@ export const HeroSlider = () => {
             if (response.ok) {
                 const data = await response.json();
                 if (data.length > 0) {
-                    setSlides(data);
+                    // Prepend storage path if image_path is relative
+                    const processedSlides = data.map((slide: Slide) => ({
+                        ...slide,
+                        image_path: slide.image_path.startsWith('http') 
+                            ? slide.image_path 
+                            : `/storage/${slide.image_path}`
+                    }));
+                    setSlides(processedSlides);
                 }
             }
         } catch (error) {

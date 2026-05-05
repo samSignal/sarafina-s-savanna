@@ -35,27 +35,13 @@ export const CurrencyProvider = ({ children }: Props) => {
 
     const load = async () => {
       try {
-        const response = await fetch("https://open.er-api.com/v6/latest/GBP");
+        const response = await fetch("/api/currencies");
         if (!response.ok) return;
 
         const data = await response.json();
-        const rates = data?.rates || {};
+        const list: Currency[] = data.currencies || [];
 
-        const supported: { code: string; symbol: string }[] = [
-          { code: "GBP", symbol: "£" },
-          { code: "USD", symbol: "$" },
-          { code: "EUR", symbol: "€" },
-          { code: "ZAR", symbol: "R" },
-          { code: "NGN", symbol: "₦" },
-          { code: "AUD", symbol: "$" },
-          { code: "CAD", symbol: "$" },
-        ];
-
-        const list: Currency[] = supported.map((c) => ({
-          code: c.code,
-          symbol: c.symbol,
-          rate: c.code === "GBP" ? 1 : Number(rates[c.code] ?? 1),
-        }));
+        if (list.length === 0) return;
 
         setCurrencies(list);
 

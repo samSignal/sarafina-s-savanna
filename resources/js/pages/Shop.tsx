@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { useSearchParams } from "react-router-dom";
+import { SEO } from "@/components/SEO";
 
 interface Product {
   id: number;
@@ -84,6 +85,14 @@ const Shop = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title={searchQuery ? `Search results for "${searchQuery}"` : "Shop All Products"} 
+        description={searchQuery 
+          ? `Find the best African products matching "${searchQuery}" at Sarafina. Fresh groceries and pantry essentials delivered in Zimbabwe.` 
+          : "Browse our complete collection of authentic African groceries, spices, fresh produce, and pantry essentials. Delivered to Zimbabwe."}
+        keywords="African groceries online, buy African food, Zimbabwe grocery delivery, African spices, authentic African products"
+        noindex={!!searchQuery}
+      />
       <Header />
       <main className="flex-1">
         <div className="bg-muted py-12 md:py-16">

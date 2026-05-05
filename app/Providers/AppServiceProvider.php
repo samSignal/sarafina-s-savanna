@@ -26,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {
-            return config('app.frontend_url', 'http://localhost:5173')."/reset-password?token=$token&email={$notifiable->getEmailForPasswordReset()}";
+            return config('app.frontend_url')."/reset-password?token=$token&email={$notifiable->getEmailForPasswordReset()}";
         });
     }
 }

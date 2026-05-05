@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -8,12 +8,32 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const Login = () => {
-  const { login } = useAuth();
+  const { login, isAuthenticated, user, loading } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!loading && isAuthenticated && user) {
+        const role = (user.role || "").toLowerCase();
+        const roleName = (user.role_name || "").toLowerCase();
+        const redirect = searchParams.get("redirect");
+        
+        const isStaff = 
+            role === 'admin' || 
+            role === 'super_admin' ||
+            (roleName && !['customer', 'client'].includes(roleName)) ||
+            (role && !['customer', 'client'].includes(role));
+
+        if (isStaff) {
+            navigate("/admin", { replace: true });
+        } else {
+            navigate(redirect || "/account", { replace: true });
+        }
+    }
+  }, [loading, isAuthenticated, user, navigate, searchParams]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -38,13 +58,14 @@ const Login = () => {
       const isStaff = 
         role === 'admin' || 
         role === 'super_admin' ||
-        (roleName && roleName !== 'customer' && roleName !== 'client') ||
-        (role && role !== 'customer' && role !== 'client');
+        (roleName && !['customer', 'client'].includes(roleName)) ||
+        (role && !['customer', 'client'].includes(role));
 
       if (isStaff) {
         navigate("/admin");
       } else {
-        navigate(redirect || "/");
+        // Redirect customers to account page if no specific redirect is set
+        navigate(redirect || "/account");
       }
     } catch {
       toast.error("Invalid email or password");
@@ -78,7 +99,15 @@ const Login = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Password</label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-primary hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <Input
                 type="password"
                 value={password}

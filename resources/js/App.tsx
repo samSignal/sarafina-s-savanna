@@ -9,6 +9,8 @@ import Shop from "./pages/Shop";
 import PublicDepartments from "./pages/Departments";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Cart from "./pages/Cart";
 import GiftCardPurchase from "./pages/GiftCardPurchase";
 import PromotionsPage from "./pages/Promotions";
@@ -35,6 +37,7 @@ import Delivery from "./pages/admin/Delivery";
 import Inventory from "./pages/admin/Inventory";
 import Sales from "./pages/admin/Sales";
 import Banners from "./pages/admin/Banners";
+import ExchangeRates from "./pages/admin/ExchangeRates";
 
 import RequirePermission from "./components/RequirePermission";
 
@@ -55,6 +58,8 @@ const App = () => (
           <Route path="/gift-cards" element={<GiftCardPurchase />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/account" element={<Account />} />
@@ -70,6 +75,7 @@ const App = () => (
             <Route index element={<RequirePermission permission="view_dashboard"><Dashboard /></RequirePermission>} />
             <Route path="products" element={<RequirePermission permission="view_products"><Products /></RequirePermission>} />
             <Route path="sales" element={<RequirePermission permission="view_orders"><Sales /></RequirePermission>} />
+            <Route path="exchange-rates" element={<RequirePermission permission="view_dashboard"><ExchangeRates /></RequirePermission>} />
             <Route path="inventory" element={<RequirePermission permission="view_products"><Inventory /></RequirePermission>} />
             <Route path="departments" element={<RequirePermission permission="manage_categories"><Departments /></RequirePermission>} />
             <Route path="categories" element={<RequirePermission permission="manage_categories"><Categories /></RequirePermission>} />

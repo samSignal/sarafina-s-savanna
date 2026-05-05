@@ -8,6 +8,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { Gift, Mail, Plus, Minus, ShoppingCart } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 interface Product {
   id: number;
@@ -127,6 +128,11 @@ const GiftCardPurchase = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title="Gift Cards" 
+        description="Give the gift of choice with a Sarafina digital gift card. Perfect for friends and family to shop authentic African flavours."
+        keywords="African gift cards, Sarafina vouchers, digital gift cards, grocery gifts"
+      />
       <Header />
       <main className="flex-1 container py-12">
         <div className="max-w-4xl mx-auto">

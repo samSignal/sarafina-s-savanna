@@ -121,6 +121,33 @@ const Account = () => {
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
   const [loadingRefundOrder, setLoadingRefundOrder] = useState<number | null>(null);
 
+  const copyToClipboard = (text: string) => {
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        toast.success("Code copied to clipboard");
+      }).catch(() => {
+        toast.error("Failed to copy code");
+      });
+    } else {
+      // Fallback for non-secure contexts
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast.success("Code copied to clipboard");
+      } catch (err) {
+        toast.error("Failed to copy code");
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
   const handleRequestRefund = async (orderId: number) => {
     setLoadingRefundOrder(orderId);
     try {
@@ -183,7 +210,8 @@ const Account = () => {
     if (loading) return;
 
     if (!isAuthenticated || !token) {
-      navigate("/login");
+      const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+      navigate(`/login?redirect=${redirect}`);
       return;
     }
 
@@ -650,10 +678,7 @@ const Account = () => {
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(card.code);
-                                      toast.success("Code copied to clipboard");
-                                    }}
+                                    onClick={() => copyToClipboard(card.code)}
                                   >
                                     <Copy className="h-3 w-3" />
                                   </Button>
@@ -727,10 +752,7 @@ const Account = () => {
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(card.code);
-                                      toast.success("Code copied to clipboard");
-                                    }}
+                                    onClick={() => copyToClipboard(card.code)}
                                   >
                                     <Copy className="h-3 w-3" />
                                   </Button>

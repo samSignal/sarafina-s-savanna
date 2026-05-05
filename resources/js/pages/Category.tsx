@@ -8,6 +8,7 @@ import { Loader2, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { SEO } from "@/components/SEO";
 
 interface Product {
   id: number;
@@ -94,6 +95,25 @@ const Category = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title={department.name} 
+        description={department.description || `Shop our ${department.name} range at Sarafina. Authentic African products delivered to Zimbabwe.`}
+        image={department.image}
+        keywords={`${department.name}, African groceries, Zimbabwe delivery, Sarafina, buy ${department.name} online`}
+        structuredData={{
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          "name": department.name,
+          "description": department.description || `Explore our collection of authentic ${department.name} products.`,
+          "url": window.location.href,
+          "image": department.image,
+          "isPartOf": {
+            "@type": "WebSite",
+            "name": "Sarafina",
+            "url": window.location.origin,
+          },
+        }}
+      />
       <Header />
       <main className="flex-1">
         {/* Hero / Header Section */}

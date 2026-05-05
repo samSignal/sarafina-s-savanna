@@ -10,6 +10,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { toast } from "sonner";
 import { Clock, Tag, ShoppingBag } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 interface Product {
     id: number;
@@ -76,7 +77,7 @@ const CountdownTimer = ({ targetDate }: { targetDate: string }) => {
 export default function Promotions() {
     const [promotions, setPromotions] = useState<Promotion[]>([]);
     const [loading, setLoading] = useState(true);
-    const { addToCart } = useCart();
+    const { addItem } = useCart();
     const { format: formatPrice, selected } = useCurrency();
 
     useEffect(() => {
@@ -98,17 +99,10 @@ export default function Promotions() {
     }, []);
 
     const handleAddToCart = (product: Product) => {
-        addToCart({
-            id: product.id,
-            name: product.name,
-            price: Number(product.price), // Cart handles promotion logic internally now via sync, but initial add might use base price
-            // Actually, Cart syncs with backend, so passing ID is key.
-            // But we should probably pass the correct price for immediate feedback if possible.
-            // However, CartContext usually takes base price.
-            // Let's pass the product as is.
-            image: product.image,
-            quantity: 1,
-        });
+        const price = product.is_on_promotion && product.promotion_price
+            ? Number(product.promotion_price)
+            : Number(product.price_uk_eu ?? product.price);
+        addItem({ id: product.id, name: product.name, price, image: product.image });
         toast.success(`Added ${product.name} to cart`);
     };
 
@@ -152,6 +146,11 @@ export default function Promotions() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
+            <SEO 
+                title="Promotions & Deals" 
+                description="Check out our latest promotions and special offers on authentic African products. Save more on your favourite items!"
+                keywords="African food deals, promotions, Sarafina discounts, special offers"
+            />
             <Header />
             <main className="flex-1 container mx-auto py-8 px-4">
                 <div className="mb-8 text-center">
