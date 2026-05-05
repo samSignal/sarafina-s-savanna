@@ -231,43 +231,34 @@ export default function Products() {
                 formData.append("image_file", imageFile);
             }
 
+            const url = isEditing ? `/api/products/${currentProduct.id}` : '/api/products';
             if (isEditing) {
-                const response = await fetch(`/api/products/${currentProduct.id}`, {
-                    method: 'POST',
-                    headers: {
-                        "X-HTTP-Method-Override": "PUT",
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData,
-                });
-                
-                if (response.ok) {
-                    const updatedProd = await response.json();
-                    setProducts(products.map(p => p.id === updatedProd.id ? updatedProd : p));
-                    toast.success("Product updated successfully");
-                    setIsDialogOpen(false);
-                } else {
-                    const error = await response.json();
-                    toast.error(error.message || "Failed to update product");
-                }
-            } else {
-                const response = await fetch('/api/products', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: formData,
-                });
+                formData.append("_method", "PUT");
+            }
 
-                if (response.ok) {
-                    const newProd = await response.json();
-                    setProducts([newProd, ...products]);
-                    toast.success("Product added successfully");
-                    setIsDialogOpen(false);
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData,
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (response.ok) {
+                if (isEditing) {
+                    setProducts(products.map(p => p.id === data.id ? data : p));
+                    toast.success("Product updated successfully");
                 } else {
-                    const error = await response.json();
-                    toast.error(error.message || "Failed to add product");
+                    setProducts([data, ...products]);
+                    toast.success("Product added successfully");
                 }
+                setIsDialogOpen(false);
+            } else {
+                // Laravel validation errors come as { errors: { field: [...] } }
+                const firstError = data.errors
+                    ? Object.values(data.errors as Record<string, string[]>).flat()[0]
+                    : data.message;
+                toast.error(firstError || (isEditing ? "Failed to update product" : "Failed to add product"));
             }
         } catch (error) {
             console.error("Error saving product", error);

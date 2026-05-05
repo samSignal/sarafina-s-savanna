@@ -32,6 +32,14 @@ export default function RequirePermission({ permission, children }: RequirePermi
     return <>{children}</>;
   }
 
+  const isStaff = 
+      (roleName && !['customer', 'client'].includes(roleName)) ||
+      (role && !['customer', 'client'].includes(role));
+
+  if (!isStaff) {
+    return <Navigate to="/account" replace />;
+  }
+
   // Check specific permission
   // If permission is '*', allow everything (super admin equivalent)
   const hasPermission = user.permissions?.includes(permission) || user.permissions?.includes('*');

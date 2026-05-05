@@ -49,7 +49,7 @@
             <p>Visit your account to view your full transaction history and rewards.</p>
             
             <p>
-                <a href="{{ config('app.url') }}/account" style="background-color: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to My Account</a>
+                <a href="{{ config('app.frontend_url') }}/account" style="background-color: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to My Account</a>
             </p>
         </div>
         <div class="footer">

@@ -1,4 +1,5 @@
 import { createRoot } from "react-dom/client";
+import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -9,12 +10,14 @@ const rootElement = document.getElementById("root");
 
 if (rootElement) {
   createRoot(rootElement).render(
-    <AuthProvider>
-      <CartProvider>
-        <CurrencyProvider>
-          <App />
-        </CurrencyProvider>
-      </CartProvider>
-    </AuthProvider>
+    <HelmetProvider>
+      <AuthProvider>
+        <CartProvider>
+          <CurrencyProvider>
+            <App />
+          </CurrencyProvider>
+        </CartProvider>
+      </AuthProvider>
+    </HelmetProvider>
   );
 }

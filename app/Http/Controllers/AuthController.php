@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Auth\Events\PasswordReset;
 
+use App\Mail\WelcomeEmail;
+use Illuminate\Support\Facades\Mail;
+
 class AuthController extends Controller
 {
     public function register(Request $request)
@@ -41,6 +44,13 @@ class AuthController extends Controller
                 app(LoyaltyService::class)->processNewAccountBonus($user);
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Loyalty bonus failed: ' . $e->getMessage());
+            }
+
+            // Send Welcome Email
+            try {
+                Mail::to($user->email)->send(new WelcomeEmail($user));
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Welcome email failed: ' . $e->getMessage());
             }
 
             $token = $user->createToken('client')->plainTextToken;
@@ -137,14 +147,14 @@ class AuthController extends Controller
         }
 
         if ($user->hasVerifiedEmail()) {
-             return redirect(config('app.frontend_url', 'http://localhost:5173') . '/login?verified=1');
+             return redirect(config('app.frontend_url') . '/login?verified=1');
         }
 
         if ($user->markEmailAsVerified()) {
             event(new Verified($user));
         }
 
-        return redirect(config('app.frontend_url', 'http://localhost:5173') . '/login?verified=1');
+        return redirect(config('app.frontend_url') . '/login?verified=1');
     }
 
     public function resendVerificationEmail(Request $request)

@@ -24,6 +24,8 @@ use App\Http\Controllers\StripeWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+Route::get('public/banners', [BannerController::class, 'index']);
+
 Route::get('/user', function (Request $request) {
     $user = $request->user()->load(['roleDefinition.permissions']);
 
@@ -94,7 +96,6 @@ Route::post('admin/loyalty/settings', [AdminLoyaltyController::class, 'updateSet
 Route::get('loyalty/settings', [AdminLoyaltyController::class, 'getSettings']);
 Route::get('general/settings', [AdminSettingsController::class, 'getSettings']);
 Route::post('admin/general/settings', [AdminSettingsController::class, 'updateSettings'])->middleware(['auth:sanctum', 'permission:manage_settings']);
-Route::get('public/banners', [BannerController::class, 'index']);
 
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
     // Banners

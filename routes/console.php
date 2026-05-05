@@ -12,3 +12,5 @@ Artisan::command('inspire', function () {
 Schedule::command('loyalty:expire-points')->daily();
 
 Schedule::command('gift-cards:expire')->daily();
+
+Schedule::command('app:update-exchange-rates')->hourly();

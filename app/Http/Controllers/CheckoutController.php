@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Mail\GiftCardRedeemed;
 use App\Mail\OrderPlaced;
 use App\Models\DeliverySetting;
+use App\Models\ExchangeRate;
 use App\Models\GiftCard;
 use App\Models\GiftCardTransaction;
 use App\Models\Order;
@@ -360,7 +361,7 @@ class CheckoutController extends Controller
 
         Stripe::setApiKey($secret);
 
-        $origin = $request->headers->get('origin') ?: config('app.url');
+        $origin = $request->headers->get('origin') ?: config('app.frontend_url');
 
         $lineItems = [];
 
@@ -544,6 +545,14 @@ class CheckoutController extends Controller
             return 1.0;
         }
 
+        // Try to get from database first
+        $rate = ExchangeRate::where('currency_code', $code)->value('rate');
+
+        if ($rate) {
+            return (float) $rate;
+        }
+
+        // Fallback to API if not in database
         try {
             $response = Http::get('https://open.er-api.com/v6/latest/GBP');
 

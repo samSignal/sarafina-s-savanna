@@ -64,7 +64,8 @@ const MyOrders = () => {
     if (loading) return;
 
     if (!isAuthenticated || !token) {
-      navigate("/login");
+      const redirect = encodeURIComponent(window.location.pathname + window.location.search);
+      navigate(`/login?redirect=${redirect}`);
       return;
     }
 

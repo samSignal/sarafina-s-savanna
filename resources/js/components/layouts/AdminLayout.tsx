@@ -21,6 +21,12 @@ const items = [
     permission: "view_orders",
   },
   {
+    title: "Exchange Rates",
+    url: "/admin/exchange-rates",
+    icon: RefreshCcw,
+    permission: "view_dashboard",
+  },
+  {
     title: "Products",
     url: "/admin/products",
     icon: Package,
@@ -140,11 +146,11 @@ export default function AdminLayout() {
     const isStaff = 
         role === 'admin' || 
         role === 'super_admin' ||
-        (roleName && roleName !== 'customer' && roleName !== 'client') ||
-        (role && role !== 'customer' && role !== 'client');
+        (roleName && !['customer', 'client'].includes(roleName)) ||
+        (role && !['customer', 'client'].includes(role));
 
     if (user && !isStaff) {
-      navigate('/', { replace: true });
+      navigate('/account', { replace: true });
     }
   }, [loading, isAuthenticated, user, location.pathname, location.search, navigate]);
 
@@ -175,7 +181,9 @@ export default function AdminLayout() {
                     if (!user) return false;
                     
                     // Admin/Super Admin bypass
-                    if (user.role === 'admin' || user.role === 'super_admin' || user.role_name === 'Administrator') return true;
+                    const role = (user.role || "").toLowerCase();
+                    const roleName = (user.role_name || "").toLowerCase();
+                    if (role === 'admin' || role === 'super_admin' || roleName === 'administrator') return true;
 
                     // Check permission
                     if (!item.permission) return true; // Public item

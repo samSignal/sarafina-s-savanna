@@ -9,9 +9,11 @@ class BannerController extends Controller
 {
     public function index()
     {
-        return Banner::where('is_active', true)
+        $banners = Banner::where('is_active', true)
             ->orderBy('position')
             ->orderBy('created_at', 'desc')
             ->get();
+            
+        return response()->json($banners);
     }
 }

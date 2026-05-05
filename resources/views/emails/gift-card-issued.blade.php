@@ -26,9 +26,11 @@ You have received a Sarafina Gift Card!
 </div>
 </x-mail::panel>
 
-You can use this code to purchase anything from our store.
+You can use this code to purchase anything from our store. 
 
-<x-mail::button :url="config('app.frontend_url')">
+If you don't have an account yet, you can [create one here]({{ config('app.frontend_url') }}/register) to start shopping and earn points! If you already have an account, please [login here]({{ config('app.frontend_url') }}/login).
+
+<x-mail::button :url="config('app.frontend_url') . '/shop'">
 Start Shopping
 </x-mail::button>
 

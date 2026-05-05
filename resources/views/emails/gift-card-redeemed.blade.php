@@ -34,7 +34,7 @@
         </div>
 
         <div style="text-align: center;">
-            <a href="{{ config('app.url') }}/client/orders/{{ $order->id }}" class="btn">View Order</a>
+            <a href="{{ config('app.frontend_url') }}/orders/{{ $order->id }}" class="btn">View Order</a>
         </div>
 
         <div class="footer">

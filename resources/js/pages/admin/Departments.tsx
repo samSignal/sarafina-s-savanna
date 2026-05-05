@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Departments() {
     const [departments, setDepartments] = useState<any[]>([]);
@@ -18,6 +19,29 @@ export default function Departments() {
     const [isEditing, setIsEditing] = useState(false);
     const [currentDept, setCurrentDept] = useState<{ id: number | null; name: string; description: string; status: string; image: string; points_multiplier: string; loyalty_reason: string }>({ id: null, name: "", description: "", status: "Active", image: "", points_multiplier: "0", loyalty_reason: "" });
     const [imageFile, setImageFile] = useState<File | null>(null);
+    const { token } = useAuth();
+
+    const getErrorMessage = async (response: Response) => {
+        const contentType = response.headers.get("content-type") || "";
+        try {
+            if (contentType.includes("application/json")) {
+                const data = await response.json();
+                if (typeof data?.message === "string" && data.message.trim()) return data.message;
+                if (typeof data?.error === "string" && data.error.trim()) return data.error;
+                if (data?.errors && typeof data.errors === "object") {
+                    const firstKey = Object.keys(data.errors)[0];
+                    const firstVal = firstKey ? data.errors[firstKey] : null;
+                    if (Array.isArray(firstVal) && typeof firstVal[0] === "string") return firstVal[0];
+                }
+            }
+
+            const text = await response.text();
+            const trimmed = text.trim();
+            if (trimmed) return trimmed.slice(0, 200);
+        } catch {
+        }
+        return `Request failed (${response.status})`;
+    };
 
     useEffect(() => {
         fetchDepartments();
@@ -25,10 +49,17 @@ export default function Departments() {
 
     const fetchDepartments = async () => {
         try {
-            const response = await fetch('/api/departments');
+            const response = await fetch('/api/departments', {
+                headers: {
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                    'Accept': 'application/json'
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 setDepartments(data);
+            } else {
+                toast.error(await getErrorMessage(response));
             }
         } catch (error) {
             console.error("Failed to fetch departments", error);
@@ -83,6 +114,10 @@ export default function Departments() {
                 formData.append("_method", "PUT");
                 const response = await fetch(`/api/departments/${currentDept.id}`, {
                     method: 'POST',
+                    headers: {
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                        'Accept': 'application/json'
+                    },
                     body: formData
                 });
                 
@@ -90,10 +125,16 @@ export default function Departments() {
                     const updatedDept = await response.json();
                     setDepartments(departments.map(d => d.id === updatedDept.id ? updatedDept : d));
                     toast.success("Department updated successfully");
+                } else {
+                    toast.error(await getErrorMessage(response));
                 }
             } else {
                 const response = await fetch('/api/departments', {
                     method: 'POST',
+                    headers: {
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                        'Accept': 'application/json'
+                    },
                     body: formData
                 });
 
@@ -101,6 +142,8 @@ export default function Departments() {
                     const newDept = await response.json();
                     setDepartments([newDept, ...departments]);
                     toast.success("Department added successfully");
+                } else {
+                    toast.error(await getErrorMessage(response));
                 }
             }
             setIsDialogOpen(false);
@@ -114,12 +157,18 @@ export default function Departments() {
         if (window.confirm("Are you sure you want to delete this department?")) {
             try {
                 const response = await fetch(`/api/departments/${id}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: {
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                        'Accept': 'application/json'
+                    }
                 });
 
                 if (response.ok) {
                     setDepartments(departments.filter(d => d.id !== id));
                     toast.success("Department removed successfully");
+                } else {
+                    toast.error(await getErrorMessage(response));
                 }
             } catch (error) {
                 console.error("Error deleting department", error);

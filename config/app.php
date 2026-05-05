@@ -125,4 +125,15 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Google Tag Manager ID
+    |--------------------------------------------------------------------------
+    |
+    | This value is the Google Tag Manager ID for your application.
+    |
+    */
+
+    'gtm_id' => env('GOOGLE_TAG_MANAGER_ID'),
+
 ];

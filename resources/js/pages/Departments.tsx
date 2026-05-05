@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { motion } from "framer-motion";
+import { SEO } from "@/components/SEO";
 
 type Dept = { id: number; name: string };
 
@@ -34,6 +35,11 @@ export default function Departments() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO 
+        title="Departments" 
+        description="Browse all departments at Sarafina. Find the best African products, spices, and groceries for your family."
+        keywords="African grocery departments, Sarafina shop, authentic African products"
+      />
       <Header />
       <main className="flex-1">
         <div className="bg-muted py-12 md:py-16">

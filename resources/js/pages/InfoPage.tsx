@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Mail, Phone, MapPin, Clock, CreditCard, Truck, ShieldCheck, HelpCircle } from "lucide-react";
+import { SEO } from "@/components/SEO";
 
 const InfoPage = () => {
   const location = useLocation();
@@ -444,8 +445,31 @@ const InfoPage = () => {
     }
   };
 
+  const getSeoDescription = () => {
+    switch (location.pathname) {
+      case "/contact":
+        return "Get in touch with Sarafina. Contact us by email, phone, or our online form for order support, delivery questions, and general enquiries.";
+      case "/faq":
+        return "Answers to common questions about ordering, delivery areas in Zimbabwe, payment methods, and product quality at Sarafina.";
+      case "/delivery-policy":
+        return "Learn about Sarafina's delivery areas, timescales, and fees for grocery delivery within Zimbabwe including Harare and Bulawayo.";
+      case "/returns-policy":
+        return "Sarafina's returns and refunds policy for perishable and non-perishable goods. Understand how to request a refund or return.";
+      case "/terms":
+        return "Read Sarafina's Terms and Conditions governing the use of our website and the purchase of products from our online store.";
+      case "/privacy":
+        return "Sarafina's Privacy Policy explains how we collect, use, and protect your personal information when you use our services.";
+      default:
+        return `Learn more about Sarafina: ${getTitle()}.`;
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen">
+      <SEO 
+        title={getTitle()} 
+        description={getSeoDescription()}
+      />
       <Header />
       <main className="flex-1 container py-12">
         <div className="max-w-5xl mx-auto">

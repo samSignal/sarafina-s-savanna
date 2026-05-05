@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -8,13 +8,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const Register = () => {
-  const { register } = useAuth();
+  const { register, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      navigate("/account", { replace: true });
+    }
+  }, [loading, isAuthenticated, navigate]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -38,7 +44,7 @@ const Register = () => {
       setSubmitting(true);
       await register(name, email, password);
       toast.success("Account created successfully");
-      navigate("/");
+      navigate("/account");
     } catch {
       toast.error("Unable to register with these details");
     } finally {
