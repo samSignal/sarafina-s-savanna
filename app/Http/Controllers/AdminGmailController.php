@@ -301,15 +301,29 @@ class AdminGmailController extends Controller
 
         $meta = $this->findAttachmentMeta($accessToken, $id, $attachmentId);
         $filename = isset($meta['filename']) && is_string($meta['filename']) && $meta['filename'] !== '' ? $meta['filename'] : 'attachment';
-        $mime = isset($meta['mime_type']) && is_string($meta['mime_type']) && $meta['mime_type'] !== '' ? $meta['mime_type'] : 'application/octet-stream';
+        $rawMime = isset($meta['mime_type']) && is_string($meta['mime_type']) && $meta['mime_type'] !== '' ? strtolower(trim($meta['mime_type'])) : 'application/octet-stream';
+
+        // Only a strict allow-list of types that cannot execute script may be shown inline.
+        // Anything else (including text/html, image/svg+xml, application/xml, etc.) is forced
+        // to a safe, non-renderable type and downloaded, since the MIME type on an inbound
+        // email is fully attacker-controlled.
+        $inlineSafeMimes = [
+            'image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/bmp', 'image/x-icon',
+            'application/pdf',
+            'text/plain',
+        ];
+        $isInlineSafe = in_array($rawMime, $inlineSafeMimes, true);
+        $mime = $isInlineSafe ? $rawMime : 'application/octet-stream';
 
         $safe = preg_replace('/[^\w.\-() ]+/', '_', $filename) ?? 'attachment';
-        $disposition = $request->string('disposition')->toString() === 'attachment' ? 'attachment' : 'inline';
+        $requestedInline = $request->string('disposition')->toString() !== 'attachment';
+        $disposition = ($requestedInline && $isInlineSafe) ? 'inline' : 'attachment';
 
         return response($data, 200, [
             'Content-Type' => $mime,
             'Content-Disposition' => $disposition.'; filename="'.$safe.'"',
             'Cache-Control' => 'private, max-age=3600',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 
