@@ -9,6 +9,7 @@ use App\Services\GiftCardService;
 use App\Services\LoyaltyService;
 use App\Services\RefundService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Stripe\Event as StripeEvent;
@@ -70,46 +71,44 @@ class StripeWebhookController extends Controller
     {
         $orderId = $session->metadata->order_id ?? null;
 
-        if ($orderId) {
-            $order = Order::find($orderId);
-
-            if ($order) {
-                if ($order->payment_status === 'Paid') {
-                    return;
-                }
-
-                $order->update([
-                    'status' => 'Completed',
-                    'payment_status' => 'Paid',
-                    'stripe_payment_intent_id' => $session->payment_intent,
-                ]);
-
-                try {
-                    app(GiftCardService::class)->issueGiftCards($order);
-                } catch (\Exception $e) {
-                    Log::error("Gift Card creation failed for order {$order->id}: ".$e->getMessage());
-                }
-
-                try {
-                    $loyaltyService = app(LoyaltyService::class);
-                    $loyaltyService->awardPoints($order);
-
-                    if ($order->points_redeemed > 0) {
-                        $user = $order->user;
-                        if ($user) {
-                            $loyaltyService->redeemPoints($user, $order->points_redeemed, $order);
-                        }
-                    }
-
-                    // Send Order Confirmation Email
-                    if ($order->user && $order->user->email) {
-                        Mail::to($order->user->email)->send(new OrderPlaced($order));
-                    }
-                } catch (\Exception $e) {
-                    Log::error("Loyalty processing failed for order {$order->id}: ".$e->getMessage());
-                }
-            }
+        if (! $orderId) {
+            return;
         }
+
+        DB::transaction(function () use ($orderId, $session) {
+            // Row-locked, authoritative "already processed?" check: this handler can race
+            // the client's own /checkout/confirm call for the same order, and only one of
+            // them should ever award points / issue gift cards.
+            $order = Order::where('id', $orderId)->lockForUpdate()->first();
+
+            if (! $order || $order->payment_status === 'Paid') {
+                return;
+            }
+
+            $order->update([
+                'status' => 'Completed',
+                'payment_status' => 'Paid',
+                'stripe_payment_intent_id' => $session->payment_intent,
+            ]);
+
+            try {
+                app(GiftCardService::class)->issueGiftCards($order);
+            } catch (\Exception $e) {
+                Log::error("Gift Card creation failed for order {$order->id}: ".$e->getMessage());
+            }
+
+            // Award Loyalty Points. Points redeemed toward this order were already reserved
+            // and deducted at checkout-session creation time, so they are not touched here.
+            try {
+                app(LoyaltyService::class)->awardPoints($order);
+
+                if ($order->user && $order->user->email) {
+                    Mail::to($order->user->email)->send(new OrderPlaced($order));
+                }
+            } catch (\Exception $e) {
+                Log::error("Loyalty processing failed for order {$order->id}: ".$e->getMessage());
+            }
+        });
     }
 
     protected function handleChargeRefunded($charge)

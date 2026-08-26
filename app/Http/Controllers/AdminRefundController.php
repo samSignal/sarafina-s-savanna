@@ -103,10 +103,41 @@ class AdminRefundController extends Controller
         ]);
 
         $order = Order::findOrFail($request->order_id);
-        
-        // Basic amount validation
-        if ($request->amount > $order->total) {
-            return response()->json(['message' => 'Refund amount cannot exceed order total.'], 422);
+
+        // Cumulative check: a single refund's amount against the order total isn't enough —
+        // multiple refunds on the same order must not sum to more than what was paid.
+        $totalRefunded = $order->refunds()->whereIn('status', ['processed', 'pending_approval'])->sum('amount');
+        if ($totalRefunded + $request->amount > $order->total) {
+            $remaining = max(0, $order->total - $totalRefunded);
+            return response()->json(['message' => "Refund amount exceeds the remaining refundable balance ({$remaining})."], 422);
+        }
+
+        // Per-item check: don't allow refunding more units of a product than were purchased
+        // and not already refunded.
+        $order->load(['items', 'refunds.items']);
+        $orderItems = $order->items->keyBy('product_id');
+        $refundedQuantities = [];
+        foreach ($order->refunds as $existingRefund) {
+            if (in_array($existingRefund->status, ['rejected', 'failed'])) {
+                continue;
+            }
+            foreach ($existingRefund->items as $rItem) {
+                $refundedQuantities[$rItem->product_id] = ($refundedQuantities[$rItem->product_id] ?? 0) + $rItem->quantity;
+            }
+        }
+
+        foreach ($request->items as $item) {
+            if (! $orderItems->has($item['product_id'])) {
+                return response()->json(['message' => 'Invalid product for this order.'], 422);
+            }
+
+            $orderItem = $orderItems[$item['product_id']];
+            $previouslyRefunded = $refundedQuantities[$item['product_id']] ?? 0;
+            $remainingQty = $orderItem->quantity - $previouslyRefunded;
+
+            if ($item['quantity'] > $remainingQty) {
+                return response()->json(['message' => 'Refund quantity for product exceeds remaining refundable quantity.'], 422);
+            }
         }
 
         try {

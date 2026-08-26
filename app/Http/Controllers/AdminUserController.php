@@ -81,6 +81,15 @@ class AdminUserController extends Controller
             'role_id' => 'sometimes|required|exists:roles,id',
         ]);
 
+        // Changing which role a user holds is a manage_roles-level action, not merely a
+        // manage_users one — otherwise a role granted manage_users without manage_roles
+        // could assign itself (or anyone) the Administrator role.
+        if (isset($validated['role_id']) && (int) $validated['role_id'] !== (int) $user->role_id) {
+            if (! $request->user()?->hasPermission('manage_roles')) {
+                return response()->json(['message' => 'Unauthorized. Missing permission: manage_roles'], 403);
+            }
+        }
+
         $data = [];
         if (isset($validated['name'])) $data['name'] = $validated['name'];
         if (isset($validated['email'])) $data['email'] = $validated['email'];
