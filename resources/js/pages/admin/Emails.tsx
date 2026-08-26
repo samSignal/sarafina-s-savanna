@@ -287,25 +287,37 @@ export default function Emails() {
   };
 
   const printHtml = (html: string) => {
-    const win = window.open("", "_blank", "noopener,noreferrer");
-    if (!win) {
-      toast.error("Popup blocked. Allow popups to print.");
-      return;
-    }
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    const start = Date.now();
-    const tick = () => {
-      if (win.closed) return;
-      if (win.document.readyState === "complete" || Date.now() - start > 3000) {
-        win.print();
-        return;
-      }
-      setTimeout(tick, 100);
+    // Rendered in a sandboxed iframe (scripts disabled) rather than document.write into a
+    // same-origin popup, so any markup that slips past sanitizeEmailHtml() cannot execute.
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("sandbox", "");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    document.body.appendChild(iframe);
+
+    const cleanup = () => {
+      setTimeout(() => {
+        iframe.parentNode?.removeChild(iframe);
+      }, 1000);
     };
-    tick();
+
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch {
+        toast.error("Failed to open print dialog");
+      } finally {
+        cleanup();
+      }
+    };
+
+    iframe.srcdoc = html;
   };
 
   const printThread = () => {
