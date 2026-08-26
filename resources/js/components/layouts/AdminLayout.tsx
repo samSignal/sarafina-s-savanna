@@ -1,11 +1,11 @@
 import { useEffect } from "react"
 import { SidebarProvider, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarTrigger, SidebarHeader, SidebarFooter } from "@/components/ui/sidebar"
-import { LayoutDashboard, Package, ShoppingCart, Settings, LogOut, User, Bell, Shield, Users, FolderTree, Award, RefreshCcw, Gift, Tag, Truck, Layers, ClipboardList, TrendingUp, Megaphone } from "lucide-react"
+import { LayoutDashboard, Package, ShoppingCart, Settings, LogOut, User, Bell, Shield, Users, FolderTree, Award, RefreshCcw, Gift, Tag, Truck, Layers, ClipboardList, TrendingUp, Megaphone, Mail } from "lucide-react"
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useAuth } from "@/contexts/AuthContext"
+import { isAdminUser, isStaffUser, useAuth } from "@/contexts/AuthContext"
 
 const items = [
   {
@@ -18,13 +18,13 @@ const items = [
     title: "Sales",
     url: "/admin/sales",
     icon: TrendingUp,
-    permission: "view_orders",
+    permission: "view_sales",
   },
   {
     title: "Exchange Rates",
     url: "/admin/exchange-rates",
     icon: RefreshCcw,
-    permission: "view_dashboard",
+    permission: "view_exchange_rates",
   },
   {
     title: "Products",
@@ -36,13 +36,13 @@ const items = [
     title: "Inventory",
     url: "/admin/inventory",
     icon: ClipboardList,
-    permission: "view_products",
+    permission: "manage_inventory",
   },
   {
     title: "Departments",
     url: "/admin/departments",
     icon: FolderTree,
-    permission: "manage_categories",
+    permission: "manage_departments",
   },
   {
     title: "Categories",
@@ -60,7 +60,7 @@ const items = [
     title: "Delivery",
     url: "/admin/delivery",
     icon: Truck,
-    permission: "manage_orders",
+    permission: "manage_delivery",
   },
   {
     title: "Promotions",
@@ -72,7 +72,7 @@ const items = [
     title: "Banners",
     url: "/admin/banners",
     icon: Megaphone,
-    permission: "manage_settings",
+    permission: "manage_banners",
   },
   {
     title: "Refunds & Policy",
@@ -114,7 +114,13 @@ const items = [
     title: "Settings",
     url: "/admin/settings",
     icon: Settings,
-    permission: "manage_settings",
+    permission: "manage_general_settings",
+  },
+  {
+    title: "Emails",
+    url: "/admin/emails",
+    icon: Mail,
+    permission: "view_emails",
   },
 ]
 
@@ -137,19 +143,7 @@ export default function AdminLayout() {
       return;
     }
 
-    // Check for admin/staff role
-    // Allow if role is admin/super_admin OR if they have a role_name that isn't Customer
-    // Robust check for legacy role column AND new role system
-    const role = (user?.role || "").toLowerCase();
-    const roleName = (user?.role_name || "").toLowerCase();
-
-    const isStaff = 
-        role === 'admin' || 
-        role === 'super_admin' ||
-        (roleName && !['customer', 'client'].includes(roleName)) ||
-        (role && !['customer', 'client'].includes(role));
-
-    if (user && !isStaff) {
+    if (user && !isStaffUser(user)) {
       navigate('/account', { replace: true });
     }
   }, [loading, isAuthenticated, user, location.pathname, location.search, navigate]);
@@ -177,17 +171,10 @@ export default function AdminLayout() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {items.filter(item => {
-                    // If no user or no permissions loaded yet, hide everything except maybe dashboard if we want to be nice (but safer to hide)
                     if (!user) return false;
-                    
-                    // Admin/Super Admin bypass
-                    const role = (user.role || "").toLowerCase();
-                    const roleName = (user.role_name || "").toLowerCase();
-                    if (role === 'admin' || role === 'super_admin' || roleName === 'administrator') return true;
+                    if (isAdminUser(user)) return true;
 
-                    // Check permission
-                    if (!item.permission) return true; // Public item
-                    
+                    if (!item.permission) return true;
                     return user.permissions?.includes(item.permission) || user.permissions?.includes('*');
                   }).map((item) => (
                     <SidebarMenuItem key={item.title}>

@@ -1,60 +1,36 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body { font-family: sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #f8f9fa; padding: 20px; text-align: center; }
-        .content { padding: 20px; }
-        .footer { text-align: center; font-size: 12px; color: #666; margin-top: 20px; }
-        .points-badge { background-color: #e9ecef; padding: 5px 10px; border-radius: 4px; font-weight: bold; }
-        .positive { color: #16a34a; }
-        .negative { color: #dc2626; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h2>Loyalty Points Update</h2>
-        </div>
-        <div class="content">
-            <p>Hello {{ $user->name }},</p>
-            
-            @if($type === 'earned')
-                <p>Great news! You've earned <span class="points-badge positive">+{{ $points }} points</span> from your recent activity.</p>
-                @if($description)
-                    <p><em>{{ $description }}</em></p>
-                @endif
-            @elseif($type === 'redeemed')
-                <p>You have successfully redeemed <span class="points-badge negative">{{ abs($points) }} points</span>.</p>
-                @if($description)
-                    <p><em>{{ $description }}</em></p>
-                @endif
-            @elseif($type === 'bonus')
-                <p>Congratulations! You've received a bonus of <span class="points-badge positive">+{{ $points }} points</span>.</p>
-                @if($description)
-                    <p><em>{{ $description }}</em></p>
-                @endif
-            @elseif($type === 'expired')
-                <p>We're sorry, but your loyalty points have expired due to inactivity.</p>
-            @elseif($type === 'adjustment')
-                <p>Your loyalty points balance has been adjusted by <span class="points-badge {{ $points > 0 ? 'positive' : 'negative' }}">{{ $points > 0 ? '+' : '' }}{{ $points }} points</span>.</p>
-                @if($description)
-                    <p>Reason: {{ $description }}</p>
-                @endif
-            @endif
+<x-mail::message>
+# Loyalty Points Update
 
-            <p>Your current balance is: <strong>{{ $balance }} points</strong></p>
+Hello {{ $user->name }},
 
-            <p>Visit your account to view your full transaction history and rewards.</p>
-            
-            <p>
-                <a href="{{ config('app.frontend_url') }}/account" style="background-color: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to My Account</a>
-            </p>
-        </div>
-        <div class="footer">
-            <p>&copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.</p>
-        </div>
-    </div>
-</body>
-</html>
+@if($type === 'earned')
+You've earned **+{{ $points }} points**.
+@elseif($type === 'redeemed')
+You've redeemed **{{ abs($points) }} points**.
+@elseif($type === 'bonus')
+You've received a bonus of **+{{ $points }} points**.
+@elseif($type === 'expired')
+Your loyalty points have expired due to inactivity.
+@elseif($type === 'adjustment')
+Your loyalty points balance has been adjusted by **{{ $points > 0 ? '+' : '' }}{{ $points }} points**.
+@else
+Your loyalty points balance has been updated.
+@endif
+
+@if($description)
+<x-mail::panel>
+{{ $description }}
+</x-mail::panel>
+@endif
+
+<x-mail::panel>
+**Current Balance:** {{ $balance }} points
+</x-mail::panel>
+
+<x-mail::button :url="config('app.frontend_url') . '/account'">
+Go to My Account
+</x-mail::button>
+
+Thanks,<br>
+{{ config('app.name') }}
+</x-mail::message>

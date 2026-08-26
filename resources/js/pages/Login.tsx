@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
+import { isStaffUser, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const Login = () => {
@@ -17,17 +17,9 @@ const Login = () => {
 
   useEffect(() => {
     if (!loading && isAuthenticated && user) {
-        const role = (user.role || "").toLowerCase();
-        const roleName = (user.role_name || "").toLowerCase();
         const redirect = searchParams.get("redirect");
-        
-        const isStaff = 
-            role === 'admin' || 
-            role === 'super_admin' ||
-            (roleName && !['customer', 'client'].includes(roleName)) ||
-            (role && !['customer', 'client'].includes(role));
 
-        if (isStaff) {
+        if (isStaffUser(user)) {
             navigate("/admin", { replace: true });
         } else {
             navigate(redirect || "/account", { replace: true });
@@ -48,23 +40,10 @@ const Login = () => {
       const user = await login(email, password);
       toast.success("Signed in successfully");
       const redirect = searchParams.get("redirect");
-      
-      // Check for any admin/staff role (not customer)
-      // Robust check for legacy role column AND new role system
-      // Treat anyone who is NOT a customer as staff/employee
-      const role = (user.role || "").toLowerCase();
-      const roleName = (user.role_name || "").toLowerCase();
-      
-      const isStaff = 
-        role === 'admin' || 
-        role === 'super_admin' ||
-        (roleName && !['customer', 'client'].includes(roleName)) ||
-        (role && !['customer', 'client'].includes(role));
 
-      if (isStaff) {
+      if (isStaffUser(user)) {
         navigate("/admin");
       } else {
-        // Redirect customers to account page if no specific redirect is set
         navigate(redirect || "/account");
       }
     } catch {

@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -48,6 +49,7 @@ class LoyaltyPointsUpdate extends Mailable implements ShouldQueue
 
         return new Envelope(
             subject: config('app.name') . ' - ' . $subject,
+            from: new Address(config('mail.from_addresses.loyalty'), config('mail.from.name')),
         );
     }
 
@@ -57,7 +59,7 @@ class LoyaltyPointsUpdate extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'emails.loyalty.update',
+            markdown: 'emails.loyalty.update',
         );
     }
 

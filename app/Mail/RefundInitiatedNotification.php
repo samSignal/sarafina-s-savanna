@@ -5,6 +5,7 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -31,6 +32,7 @@ class RefundInitiatedNotification extends Mailable
     {
         return new Envelope(
             subject: 'Refund Initiated',
+            from: new Address(config('mail.from_addresses.refunds'), config('mail.from.name')),
         );
     }
 
@@ -40,7 +42,7 @@ class RefundInitiatedNotification extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.refunds.initiated',
+            markdown: 'emails.refunds.initiated',
         );
     }
 

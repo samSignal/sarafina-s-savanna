@@ -5,6 +5,7 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -31,6 +32,7 @@ class RefundProcessedNotification extends Mailable
     {
         return new Envelope(
             subject: 'Refund Processed',
+            from: new Address(config('mail.from_addresses.refunds'), config('mail.from.name')),
         );
     }
 
@@ -40,7 +42,7 @@ class RefundProcessedNotification extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.refunds.processed',
+            markdown: 'emails.refunds.processed',
         );
     }
 

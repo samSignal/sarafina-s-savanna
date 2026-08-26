@@ -18,6 +18,28 @@ use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
+    private function serializeUser(User $user): array
+    {
+        $user->loadMissing(['roleDefinition.permissions']);
+
+        $permissions = [];
+        if ($user->roleDefinition) {
+            $permissions = $user->roleDefinition->permissions->pluck('name')->values()->toArray();
+        } elseif (in_array($user->role, ['admin', 'super_admin'], true)) {
+            $permissions = ['*'];
+        }
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'role_id' => $user->role_id,
+            'role_name' => $user->roleDefinition ? $user->roleDefinition->name : null,
+            'permissions' => $permissions,
+        ];
+    }
+
     public function register(Request $request)
     {
         try {
@@ -65,14 +87,7 @@ class AuthController extends Controller
             }
 
             return response()->json([
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'role_id' => $user->role_id,
-                    'role_name' => $user->roleDefinition ? $user->roleDefinition->name : null,
-                ],
+                'user' => $this->serializeUser($user),
                 'token' => $token,
             ], 201);
         } catch (ValidationException $e) {
@@ -113,14 +128,7 @@ class AuthController extends Controller
         }
 
         return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'role' => $user->role,
-                'role_id' => $user->role_id,
-                'role_name' => $user->roleDefinition ? $user->roleDefinition->name : null,
-            ],
+            'user' => $this->serializeUser($user),
             'token' => $token,
         ]);
     }
