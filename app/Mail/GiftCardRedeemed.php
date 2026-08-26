@@ -7,6 +7,7 @@ use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -36,6 +37,7 @@ class GiftCardRedeemed extends Mailable implements ShouldQueue
     {
         return new Envelope(
             subject: "Gift Card Redeemed - Sarafina",
+            from: new Address(config('mail.from_addresses.gift_cards'), config('mail.from.name')),
         );
     }
 
@@ -45,7 +47,7 @@ class GiftCardRedeemed extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'emails.gift-card-redeemed',
+            markdown: 'emails.gift-card-redeemed',
         );
     }
 

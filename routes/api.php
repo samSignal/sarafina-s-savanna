@@ -12,6 +12,7 @@ use App\Http\Controllers\AdminSettingsController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BannerController;
+use App\Http\Controllers\AdminGmailController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ClientOrderController;
@@ -78,15 +79,15 @@ Route::get('admin/customers/{user}', [AdminCustomerController::class, 'show'])->
 Route::get('admin/orders', [AdminOrderController::class, 'index'])->middleware(['auth:sanctum', 'permission:view_orders']);
 Route::put('admin/orders/{order}', [AdminOrderController::class, 'update'])->middleware(['auth:sanctum', 'permission:manage_orders']);
 Route::get('admin/analytics', [App\Http\Controllers\AdminAnalyticsController::class, 'index'])->middleware(['auth:sanctum', 'permission:view_dashboard']);
-Route::get('admin/delivery/settings', [AdminDeliveryController::class, 'getSettings'])->middleware(['auth:sanctum', 'permission:manage_settings']);
-Route::post('admin/delivery/settings', [AdminDeliveryController::class, 'updateSettings'])->middleware(['auth:sanctum', 'permission:manage_settings']);
-Route::get('admin/delivery/orders', [AdminDeliveryController::class, 'getDeliveries'])->middleware(['auth:sanctum', 'permission:manage_orders']);
-Route::post('admin/delivery/orders/{order}/status', [AdminDeliveryController::class, 'updateDeliveryStatus'])->middleware(['auth:sanctum', 'permission:manage_orders']);
+Route::get('admin/delivery/settings', [AdminDeliveryController::class, 'getSettings'])->middleware(['auth:sanctum', 'permission:manage_delivery']);
+Route::post('admin/delivery/settings', [AdminDeliveryController::class, 'updateSettings'])->middleware(['auth:sanctum', 'permission:manage_delivery']);
+Route::get('admin/delivery/orders', [AdminDeliveryController::class, 'getDeliveries'])->middleware(['auth:sanctum', 'permission:manage_delivery']);
+Route::post('admin/delivery/orders/{order}/status', [AdminDeliveryController::class, 'updateDeliveryStatus'])->middleware(['auth:sanctum', 'permission:manage_delivery']);
 Route::get('delivery/settings', [AdminDeliveryController::class, 'getSettings']); // Public endpoint for checkout
-Route::get('admin/sales/stats', [App\Http\Controllers\AdminSalesController::class, 'getStats'])->middleware(['auth:sanctum', 'permission:view_orders']);
-Route::get('admin/sales/chart', [App\Http\Controllers\AdminSalesController::class, 'getChartData'])->middleware(['auth:sanctum', 'permission:view_orders']);
-Route::get('admin/sales/recent', [App\Http\Controllers\AdminSalesController::class, 'getRecentSales'])->middleware(['auth:sanctum', 'permission:view_orders']);
-Route::get('admin/sales/top-products', [App\Http\Controllers\AdminSalesController::class, 'getTopProducts'])->middleware(['auth:sanctum', 'permission:view_orders']);
+Route::get('admin/sales/stats', [App\Http\Controllers\AdminSalesController::class, 'getStats'])->middleware(['auth:sanctum', 'permission:view_sales']);
+Route::get('admin/sales/chart', [App\Http\Controllers\AdminSalesController::class, 'getChartData'])->middleware(['auth:sanctum', 'permission:view_sales']);
+Route::get('admin/sales/recent', [App\Http\Controllers\AdminSalesController::class, 'getRecentSales'])->middleware(['auth:sanctum', 'permission:view_sales']);
+Route::get('admin/sales/top-products', [App\Http\Controllers\AdminSalesController::class, 'getTopProducts'])->middleware(['auth:sanctum', 'permission:view_sales']);
 Route::get('currencies', [CurrencyController::class, 'index']);
 Route::post('admin/loyalty/adjust/{user}', [AdminLoyaltyController::class, 'adjust'])->middleware(['auth:sanctum', 'permission:manage_loyalty']);
 Route::get('admin/loyalty/transactions', [AdminLoyaltyController::class, 'index'])->middleware(['auth:sanctum', 'permission:manage_loyalty']);
@@ -95,12 +96,29 @@ Route::get('admin/loyalty/settings', [AdminLoyaltyController::class, 'getSetting
 Route::post('admin/loyalty/settings', [AdminLoyaltyController::class, 'updateSettings'])->middleware(['auth:sanctum', 'permission:manage_loyalty']);
 Route::get('loyalty/settings', [AdminLoyaltyController::class, 'getSettings']);
 Route::get('general/settings', [AdminSettingsController::class, 'getSettings']);
-Route::post('admin/general/settings', [AdminSettingsController::class, 'updateSettings'])->middleware(['auth:sanctum', 'permission:manage_settings']);
+Route::post('admin/general/settings', [AdminSettingsController::class, 'updateSettings'])->middleware(['auth:sanctum', 'permission:manage_general_settings']);
+Route::get('admin/currencies', [CurrencyController::class, 'index'])->middleware(['auth:sanctum', 'permission:view_exchange_rates']);
+Route::get('admin/inventory/products', [ProductController::class, 'index'])->middleware(['auth:sanctum', 'permission:manage_inventory']);
+Route::patch('admin/inventory/products/{product}/stock', [ProductController::class, 'updateStock'])->middleware(['auth:sanctum', 'permission:manage_inventory']);
 
 Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
+    Route::prefix('gmail')->group(function () {
+        Route::get('/status', [AdminGmailController::class, 'status'])->middleware('permission:view_emails');
+        Route::get('/oauth/url', [AdminGmailController::class, 'authUrl'])->middleware('permission:manage_email_connection');
+        Route::get('/inbox', [AdminGmailController::class, 'inbox'])->middleware('permission:view_emails');
+        Route::get('/message/{id}', [AdminGmailController::class, 'message'])->middleware('permission:view_emails');
+        Route::get('/message/{id}/attachment/{attachmentId}', [AdminGmailController::class, 'attachment'])->middleware('permission:view_emails');
+        Route::get('/thread/{id}', [AdminGmailController::class, 'thread'])->middleware('permission:view_emails');
+        Route::get('/sent', [AdminGmailController::class, 'sent'])->middleware('permission:view_emails');
+        Route::get('/sent/{id}', [AdminGmailController::class, 'sentShow'])->middleware('permission:view_emails');
+        Route::get('/spam', [AdminGmailController::class, 'spam'])->middleware('permission:view_emails');
+        Route::post('/reply', [AdminGmailController::class, 'reply'])->middleware('permission:send_emails');
+        Route::post('/send', [AdminGmailController::class, 'send'])->middleware('permission:send_emails');
+    });
+
     // Banners
-    Route::apiResource('/banners', AdminBannerController::class)->middleware('permission:manage_settings');
-    Route::post('/banners/order', [AdminBannerController::class, 'updateOrder'])->middleware('permission:manage_settings');
+    Route::apiResource('/banners', AdminBannerController::class)->middleware('permission:manage_banners');
+    Route::post('/banners/order', [AdminBannerController::class, 'updateOrder'])->middleware('permission:manage_banners');
 
     // Roles & Permissions
     Route::get('/roles', [AdminRoleController::class, 'index'])->middleware('permission:manage_roles');

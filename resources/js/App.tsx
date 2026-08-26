@@ -38,6 +38,7 @@ import Inventory from "./pages/admin/Inventory";
 import Sales from "./pages/admin/Sales";
 import Banners from "./pages/admin/Banners";
 import ExchangeRates from "./pages/admin/ExchangeRates";
+import Emails from "./pages/admin/Emails";
 
 import RequirePermission from "./components/RequirePermission";
 
@@ -74,15 +75,15 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<RequirePermission permission="view_dashboard"><Dashboard /></RequirePermission>} />
             <Route path="products" element={<RequirePermission permission="view_products"><Products /></RequirePermission>} />
-            <Route path="sales" element={<RequirePermission permission="view_orders"><Sales /></RequirePermission>} />
-            <Route path="exchange-rates" element={<RequirePermission permission="view_dashboard"><ExchangeRates /></RequirePermission>} />
-            <Route path="inventory" element={<RequirePermission permission="view_products"><Inventory /></RequirePermission>} />
-            <Route path="departments" element={<RequirePermission permission="manage_categories"><Departments /></RequirePermission>} />
+            <Route path="sales" element={<RequirePermission permission="view_sales"><Sales /></RequirePermission>} />
+            <Route path="exchange-rates" element={<RequirePermission permission="view_exchange_rates"><ExchangeRates /></RequirePermission>} />
+            <Route path="inventory" element={<RequirePermission permission="manage_inventory"><Inventory /></RequirePermission>} />
+            <Route path="departments" element={<RequirePermission permission="manage_departments"><Departments /></RequirePermission>} />
             <Route path="categories" element={<RequirePermission permission="manage_categories"><Categories /></RequirePermission>} />
             <Route path="orders" element={<RequirePermission permission="view_orders"><Orders /></RequirePermission>} />
-            <Route path="delivery" element={<RequirePermission permission="manage_orders"><Delivery /></RequirePermission>} />
+            <Route path="delivery" element={<RequirePermission permission="manage_delivery"><Delivery /></RequirePermission>} />
             <Route path="promotions" element={<RequirePermission permission="manage_promotions"><Promotions /></RequirePermission>} />
-            <Route path="banners" element={<RequirePermission permission="manage_settings"><Banners /></RequirePermission>} />
+            <Route path="banners" element={<RequirePermission permission="manage_banners"><Banners /></RequirePermission>} />
             <Route path="refunds" element={<RequirePermission permission="manage_refunds"><Refunds /></RequirePermission>} />
             <Route path="gift-cards" element={<RequirePermission permission="manage_gift_cards"><GiftCards /></RequirePermission>} />
             <Route path="customers" element={<RequirePermission permission="view_customers"><Customers /></RequirePermission>} />
@@ -90,7 +91,8 @@ const App = () => (
             <Route path="loyalty" element={<RequirePermission permission="manage_loyalty"><Loyalty /></RequirePermission>} />
             <Route path="roles" element={<RequirePermission permission="manage_roles"><Roles /></RequirePermission>} />
             <Route path="users" element={<RequirePermission permission="view_users"><Users /></RequirePermission>} />
-            <Route path="settings" element={<RequirePermission permission="manage_settings"><Settings /></RequirePermission>} />
+            <Route path="settings" element={<RequirePermission permission="manage_general_settings"><Settings /></RequirePermission>} />
+            <Route path="emails" element={<RequirePermission permission="view_emails"><Emails /></RequirePermission>} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

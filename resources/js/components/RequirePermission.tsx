@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { isAdminUser, isStaffUser, useAuth } from "@/contexts/AuthContext";
 
 interface RequirePermissionProps {
   permission: string;
@@ -18,30 +18,14 @@ export default function RequirePermission({ permission, children }: RequirePermi
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Admin/Super Admin bypass logic matching AdminLayout
-  // Check for admin/staff role
-  const role = (user.role || "").toLowerCase();
-  const roleName = (user.role_name || "").toLowerCase();
-
-  const isAdmin = 
-      role === 'admin' || 
-      role === 'super_admin' ||
-      roleName === 'administrator';
-
-  if (isAdmin) {
+  if (isAdminUser(user)) {
     return <>{children}</>;
   }
 
-  const isStaff = 
-      (roleName && !['customer', 'client'].includes(roleName)) ||
-      (role && !['customer', 'client'].includes(role));
-
-  if (!isStaff) {
+  if (!isStaffUser(user)) {
     return <Navigate to="/account" replace />;
   }
 
-  // Check specific permission
-  // If permission is '*', allow everything (super admin equivalent)
   const hasPermission = user.permissions?.includes(permission) || user.permissions?.includes('*');
 
   if (!hasPermission) {

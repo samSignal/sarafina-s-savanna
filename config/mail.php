@@ -123,4 +123,19 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    'from_addresses' => [
+        'default' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+        'auth' => env('MAIL_FROM_AUTH_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+        'orders' => env('MAIL_FROM_ORDERS_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+        'gift_cards' => env('MAIL_FROM_GIFTCARDS_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+        'refunds' => env('MAIL_FROM_REFUNDS_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+        'loyalty' => env('MAIL_FROM_LOYALTY_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+        'support' => env('MAIL_FROM_SUPPORT_ADDRESS', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+    ],
+
+    'reply_to' => [
+        'address' => env('MAIL_REPLY_TO_ADDRESS'),
+        'name' => env('MAIL_REPLY_TO_NAME'),
+    ],
+
 ];

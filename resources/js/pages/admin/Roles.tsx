@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Shield, MoreHorizontal, Edit, Trash, Lock } from "lucide-react";
+import { Plus, Shield, MoreHorizontal, Edit, Trash, Lock, Search, Eye, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -22,12 +22,107 @@ interface Role {
     permissions: string[];
 }
 
+interface PermissionItem {
+    id: number;
+    name: string;
+    description: string;
+}
+
 interface PermissionGroup {
-    [key: string]: Array<{
-        id: number;
-        name: string;
-        description: string;
-    }>;
+    [key: string]: PermissionItem[];
+}
+
+interface PermissionPickerProps {
+    permissions: PermissionGroup;
+    selected: string[];
+    onToggle: (name: string) => void;
+    onSelectVisible: (names: string[], select: boolean) => void;
+    idPrefix: string;
+}
+
+function PermissionPicker({ permissions, selected, onToggle, onSelectVisible, idPrefix }: PermissionPickerProps) {
+    const [search, setSearch] = useState("");
+
+    const totalCount = useMemo(
+        () => Object.values(permissions).reduce((sum, perms) => sum + perms.length, 0),
+        [permissions]
+    );
+
+    const filteredGroups = useMemo(() => {
+        const term = search.trim().toLowerCase();
+        if (!term) return permissions;
+
+        return Object.entries(permissions).reduce((acc, [group, perms]) => {
+            const matches = perms.filter(
+                (p) => p.name.toLowerCase().includes(term) || (p.description || "").toLowerCase().includes(term)
+            );
+            if (matches.length) acc[group] = matches;
+            return acc;
+        }, {} as PermissionGroup);
+    }, [permissions, search]);
+
+    const visibleNames = useMemo(
+        () => Object.values(filteredGroups).flat().map((p) => p.name),
+        [filteredGroups]
+    );
+
+    const allVisibleSelected = visibleNames.length > 0 && visibleNames.every((n) => selected.includes(n));
+    const someVisibleSelected = visibleNames.some((n) => selected.includes(n));
+
+    return (
+        <div className="space-y-3">
+            <div className="flex items-center gap-3">
+                <div className="relative flex-1">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        className="pl-8"
+                        placeholder="Search permissions..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                    <Checkbox
+                        id={`${idPrefix}-select-all`}
+                        checked={allVisibleSelected ? true : someVisibleSelected ? "indeterminate" : false}
+                        onCheckedChange={() => onSelectVisible(visibleNames, !allVisibleSelected)}
+                        disabled={visibleNames.length === 0}
+                    />
+                    <Label htmlFor={`${idPrefix}-select-all`} className="text-sm font-normal cursor-pointer">
+                        Select All
+                    </Label>
+                </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+                {selected.length} of {totalCount} permissions selected
+            </p>
+            <div className="border rounded-md p-4 space-y-4 max-h-[50vh] overflow-y-auto">
+                {Object.keys(filteredGroups).length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-6">No permissions match your search.</p>
+                ) : (
+                    Object.entries(filteredGroups).map(([group, perms]) => (
+                        <div key={group} className="space-y-2">
+                            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">{group}</h4>
+                            <div className="grid grid-cols-2 gap-2">
+                                {perms.map((perm) => (
+                                    <div key={perm.id} className="flex items-center space-x-2">
+                                        <Checkbox
+                                            id={`${idPrefix}-perm-${perm.id}`}
+                                            checked={selected.includes(perm.name)}
+                                            onCheckedChange={() => onToggle(perm.name)}
+                                        />
+                                        <Label htmlFor={`${idPrefix}-perm-${perm.id}`} className="text-sm font-normal cursor-pointer">
+                                            {perm.description || perm.name}
+                                        </Label>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
 }
 
 export default function Roles() {
@@ -38,7 +133,9 @@ export default function Roles() {
     const [loading, setLoading] = useState(true);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
+    const [isViewOpen, setIsViewOpen] = useState(false);
     const [currentRole, setCurrentRole] = useState<Role | null>(null);
+    const [viewRole, setViewRole] = useState<Role | null>(null);
 
     // Form states
     const [formData, setFormData] = useState({
@@ -199,6 +296,20 @@ export default function Roles() {
         });
     };
 
+    const selectVisiblePermissions = (names: string[], select: boolean) => {
+        setFormData(prev => {
+            if (select) {
+                return { ...prev, permissions: Array.from(new Set([...prev.permissions, ...names])) };
+            }
+            return { ...prev, permissions: prev.permissions.filter(p => !names.includes(p)) };
+        });
+    };
+
+    const openViewDialog = (role: Role) => {
+        setViewRole(role);
+        setIsViewOpen(true);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -236,27 +347,13 @@ export default function Roles() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Permissions</Label>
-                                <div className="border rounded-md p-4 space-y-4">
-                                    {Object.entries(permissions).map(([group, perms]) => (
-                                        <div key={group} className="space-y-2">
-                                            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">{group}</h4>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {perms.map(perm => (
-                                                    <div key={perm.id} className="flex items-center space-x-2">
-                                                        <Checkbox 
-                                                            id={`create-perm-${perm.id}`} 
-                                                            checked={formData.permissions.includes(perm.name)}
-                                                            onCheckedChange={() => togglePermission(perm.name)}
-                                                        />
-                                                        <Label htmlFor={`create-perm-${perm.id}`} className="text-sm font-normal cursor-pointer">
-                                                            {perm.description || perm.name}
-                                                        </Label>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                <PermissionPicker
+                                    permissions={permissions}
+                                    selected={formData.permissions}
+                                    onToggle={togglePermission}
+                                    onSelectVisible={selectVisiblePermissions}
+                                    idPrefix="create"
+                                />
                             </div>
                         </div>
                         <DialogFooter>
@@ -330,6 +427,9 @@ export default function Roles() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuItem onClick={() => openViewDialog(role)}>
+                                                        <Eye className="mr-2 h-4 w-4" /> View Details
+                                                    </DropdownMenuItem>
                                                     <DropdownMenuItem onClick={() => openEditDialog(role)}>
                                                         <Edit className="mr-2 h-4 w-4" /> Edit Role
                                                     </DropdownMenuItem>
@@ -380,32 +480,50 @@ export default function Roles() {
                         </div>
                         <div className="space-y-2">
                             <Label>Permissions</Label>
-                            <div className="border rounded-md p-4 space-y-4">
-                                {Object.entries(permissions).map(([group, perms]) => (
-                                    <div key={group} className="space-y-2">
-                                        <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">{group}</h4>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {perms.map(perm => (
-                                                <div key={perm.id} className="flex items-center space-x-2">
-                                                    <Checkbox 
-                                                        id={`edit-perm-${perm.id}`} 
-                                                        checked={formData.permissions.includes(perm.name)}
-                                                        onCheckedChange={() => togglePermission(perm.name)}
-                                                    />
-                                                    <Label htmlFor={`edit-perm-${perm.id}`} className="text-sm font-normal cursor-pointer">
-                                                        {perm.description || perm.name}
-                                                    </Label>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                            <PermissionPicker
+                                permissions={permissions}
+                                selected={formData.permissions}
+                                onToggle={togglePermission}
+                                onSelectVisible={selectVisiblePermissions}
+                                idPrefix="edit"
+                            />
                         </div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
                         <Button onClick={handleUpdateRole}>Update Role</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>{viewRole?.name}</DialogTitle>
+                        <DialogDescription>{viewRole?.description || "No description provided."}</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 py-2">
+                        <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Assigned Permissions</span>
+                            <Badge variant="outline">{viewRole?.permissions.length ?? 0}</Badge>
+                        </div>
+                        {viewRole && viewRole.permissions.length > 0 ? (
+                            <div className="border rounded-md p-4 grid grid-cols-2 gap-2 max-h-[50vh] overflow-y-auto">
+                                {viewRole.permissions.map((perm) => (
+                                    <div key={perm} className="flex items-center gap-2 text-sm">
+                                        <CheckCircle2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                        <span>{perm.replace(/_/g, ' ')}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center py-6 border rounded-md">
+                                No permissions assigned to this role.
+                            </p>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsViewOpen(false)}>Close</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

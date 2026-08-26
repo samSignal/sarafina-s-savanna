@@ -11,6 +11,34 @@ interface User {
   points_balance?: number;
 }
 
+const normalizeRoleValue = (value?: string | null) => (value || "").trim().toLowerCase();
+
+export const isAdminUser = (user: User | null | undefined) => {
+  const role = normalizeRoleValue(user?.role);
+  const roleName = normalizeRoleValue(user?.role_name);
+
+  return role === "admin" || role === "super_admin" || roleName === "administrator";
+};
+
+export const isStaffUser = (user: User | null | undefined) => {
+  if (!user) return false;
+  if (isAdminUser(user)) return true;
+  if ((user.permissions || []).length > 0) return true;
+
+  const role = normalizeRoleValue(user.role);
+  const roleName = normalizeRoleValue(user.role_name);
+
+  if (roleName) {
+    return !["customer", "client"].includes(roleName);
+  }
+
+  if (role) {
+    return !["customer", "client"].includes(role);
+  }
+
+  return false;
+};
+
 interface AuthContextValue {
   user: User | null;
   token: string | null;
@@ -154,4 +182,3 @@ export function useAuth() {
 
   return ctx;
 }
-

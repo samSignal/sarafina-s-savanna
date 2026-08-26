@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Inventory() {
+    const { token } = useAuth();
     const [products, setProducts] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -17,12 +19,16 @@ export default function Inventory() {
     const [newThreshold, setNewThreshold] = useState("");
 
     useEffect(() => {
-        fetchProducts();
-    }, []);
+        if (token) {
+            fetchProducts();
+        }
+    }, [token]);
 
     const fetchProducts = async () => {
         try {
-            const response = await fetch('/api/products');
+            const response = await fetch('/api/admin/inventory/products', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             if (response.ok) {
                 const data = await response.json();
                 setProducts(data);
@@ -44,10 +50,11 @@ export default function Inventory() {
         if (!currentProduct) return;
 
         try {
-            const response = await fetch(`/api/products/${currentProduct.id}/stock`, {
+            const response = await fetch(`/api/admin/inventory/products/${currentProduct.id}/stock`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({ 
                     stock: parseInt(newStock),

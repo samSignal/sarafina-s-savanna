@@ -6,6 +6,7 @@ use App\Models\GiftCard;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -39,6 +40,7 @@ class GiftCardIssued extends Mailable implements ShouldQueue
 
         return new Envelope(
             subject: $subject,
+            from: new Address(config('mail.from_addresses.gift_cards'), config('mail.from.name')),
         );
     }
 

@@ -16,8 +16,14 @@ class AdminUserController extends Controller
 
         // Optional: Filter by role or type
         if ($request->has('type') && $request->type === 'staff') {
-            $query->whereHas('roleDefinition', function ($q) {
-                $q->where('name', '!=', 'Customer');
+            $query->where(function ($q) {
+                $q->whereHas('roleDefinition', function ($roleQuery) {
+                    $roleQuery->where('name', '!=', 'Customer');
+                })->orWhere(function ($legacyQuery) {
+                    $legacyQuery
+                        ->whereNotNull('role')
+                        ->whereNotIn('role', ['customer', 'client']);
+                });
             });
         }
 
@@ -100,9 +106,9 @@ class AdminUserController extends Controller
         ]);
     }
 
-    public function destroy(User $user)
+    public function destroy(Request $request, User $user)
     {
-        if ($user->id === auth()->id()) {
+        if ($user->id === $request->user()?->id) {
             return response()->json(['message' => 'Cannot delete your own account'], 403);
         }
 

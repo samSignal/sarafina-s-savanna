@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
@@ -23,6 +24,12 @@ class AppServiceProvider extends ServiceProvider
     {
         if (config('app.env') !== 'local') {
             URL::forceScheme('https');
+        }
+
+        $replyToAddress = config('mail.reply_to.address');
+        if (is_string($replyToAddress) && $replyToAddress !== '') {
+            $replyToName = config('mail.reply_to.name') ?: config('mail.from.name');
+            Mail::alwaysReplyTo($replyToAddress, is_string($replyToName) ? $replyToName : null);
         }
 
         ResetPassword::createUrlUsing(function (object $notifiable, string $token) {

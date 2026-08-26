@@ -5,6 +5,7 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -32,6 +33,7 @@ class WelcomeEmail extends Mailable
     {
         return new Envelope(
             subject: 'Welcome to Sarafina!',
+            from: new Address(config('mail.from_addresses.auth'), config('mail.from.name')),
         );
     }
 

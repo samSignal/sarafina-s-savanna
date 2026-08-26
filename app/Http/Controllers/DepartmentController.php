@@ -11,7 +11,7 @@ class DepartmentController extends Controller
     public function __construct()
     {
         $this->middleware('auth:sanctum')->except(['index', 'show', 'publicIndex', 'publicShow']);
-        $this->middleware('permission:manage_categories')->only(['store', 'update', 'destroy']);
+        $this->middleware('permission:manage_departments')->only(['store', 'update', 'destroy']);
     }
 
     public function index()
@@ -26,7 +26,7 @@ class DepartmentController extends Controller
                 ->orderBy('name')
                 ->get();
         } catch (\Throwable $e) {
-            \Log::error('publicIndex departments failed', ['message' => $e->getMessage()]);
+            Log::error('publicIndex departments failed', ['message' => $e->getMessage()]);
             return response()->json(['message' => 'Failed to load departments', 'error' => $e->getMessage()], 500);
         }
     }

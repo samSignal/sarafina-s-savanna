@@ -34,6 +34,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   Select, 
   SelectContent, 
@@ -64,6 +65,7 @@ const currencyInfo: Record<string, { name: string; symbol: string }> = {
 };
 
 const ExchangeRates = () => {
+  const { token } = useAuth();
   const [rates, setRates] = useState<RateData[]>([]);
   const [baseCurrency, setBaseCurrency] = useState("GBP");
   const [lastUpdate, setLastUpdate] = useState<string>("");
@@ -81,7 +83,9 @@ const ExchangeRates = () => {
   const fetchRates = async () => {
     try {
       setRefreshing(true);
-      const response = await fetch('/api/currencies');
+      const response = await fetch('/api/admin/currencies', {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (!response.ok) throw new Error("Failed to fetch rates");
       
       const data = await response.json();
@@ -114,8 +118,10 @@ const ExchangeRates = () => {
   };
 
   useEffect(() => {
-    fetchRates();
-  }, []);
+    if (token) {
+      fetchRates();
+    }
+  }, [token]);
 
   useEffect(() => {
     if (rates.length > 0) {
