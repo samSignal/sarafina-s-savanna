@@ -3,12 +3,14 @@
 namespace App\Mail;
 
 use App\Models\GiftCard;
+use App\Services\MailUnsubscribeService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
 
 class GiftCardIssued extends Mailable implements ShouldQueue
@@ -52,6 +54,14 @@ class GiftCardIssued extends Mailable implements ShouldQueue
         return new Content(
             markdown: 'emails.gift-card-issued',
         );
+    }
+
+    /**
+     * Get the message headers, including a one-click unsubscribe header (RFC 8058).
+     */
+    public function headers(): Headers
+    {
+        return app(MailUnsubscribeService::class)->headersFor($this->giftCard->recipient_email);
     }
 
     /**

@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use Illuminate\Auth\Events\PasswordReset;
 
 use App\Mail\WelcomeEmail;
+use App\Services\MailUnsubscribeService;
 use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
@@ -68,9 +69,11 @@ class AuthController extends Controller
                 \Illuminate\Support\Facades\Log::error('Loyalty bonus failed: ' . $e->getMessage());
             }
 
-            // Send Welcome Email
+            // Send Welcome Email (marketing content, so it's skipped for unsubscribed addresses)
             try {
-                Mail::to($user->email)->send(new WelcomeEmail($user));
+                if (! app(MailUnsubscribeService::class)->isUnsubscribed($user->email)) {
+                    Mail::to($user->email)->send(new WelcomeEmail($user));
+                }
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Welcome email failed: ' . $e->getMessage());
             }

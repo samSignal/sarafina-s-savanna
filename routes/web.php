@@ -4,6 +4,11 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use App\Http\Controllers\AdminGmailController;
+use App\Http\Controllers\EmailUnsubscribeController;
+
+Route::match(['get', 'post'], '/email/unsubscribe/{email}', [EmailUnsubscribeController::class, 'unsubscribe'])
+    ->name('email.unsubscribe')
+    ->middleware('signed');
 
  $faviconHandler = function () {
     $sourcePath = public_path('images/department logo/sarafina logo.jpeg');
