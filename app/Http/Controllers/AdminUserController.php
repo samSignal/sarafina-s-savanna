@@ -45,7 +45,7 @@ class AdminUserController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->whereNull('deleted_at')],
             'password' => 'required|string|min:8',
             'role_id' => 'required|exists:roles,id',
         ]);
@@ -76,7 +76,7 @@ class AdminUserController extends Controller
     {
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)->whereNull('deleted_at')],
             'password' => 'nullable|string|min:8',
             'role_id' => 'sometimes|required|exists:roles,id',
         ]);

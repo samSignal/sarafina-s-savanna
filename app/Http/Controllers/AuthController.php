@@ -16,6 +16,7 @@ use Illuminate\Auth\Events\PasswordReset;
 use App\Mail\WelcomeEmail;
 use App\Services\MailUnsubscribeService;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -46,7 +47,7 @@ class AuthController extends Controller
         try {
             $validated = $request->validate([
                 'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+                'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->whereNull('deleted_at')],
                 'password' => ['required', 'string', 'min:8'],
             ]);
 
