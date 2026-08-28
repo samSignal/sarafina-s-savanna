@@ -9,7 +9,10 @@ class ProductController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:sanctum')->except(['index', 'show', 'publicIndex']);
+        // index() returns unfiltered internal fields (cost/margin targets, stock, gift-card
+        // configs, inactive-department products) that publicIndex() deliberately hides, so it
+        // must require authentication like every other non-public action.
+        $this->middleware('auth:sanctum')->except(['show', 'publicIndex']);
         $this->middleware('permission:manage_products')->only(['store', 'update', 'destroy', 'updateStock']);
     }
 

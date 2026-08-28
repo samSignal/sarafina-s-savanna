@@ -8,9 +8,11 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Mail\Mailables\Headers;
 use Illuminate\Queue\SerializesModels;
 
 use App\Models\User;
+use App\Services\MailUnsubscribeService;
 
 class WelcomeEmail extends Mailable
 {
@@ -45,6 +47,14 @@ class WelcomeEmail extends Mailable
         return new Content(
             markdown: 'emails.welcome',
         );
+    }
+
+    /**
+     * Get the message headers, including a one-click unsubscribe header (RFC 8058).
+     */
+    public function headers(): Headers
+    {
+        return app(MailUnsubscribeService::class)->headersFor($this->user->email);
     }
 
     /**

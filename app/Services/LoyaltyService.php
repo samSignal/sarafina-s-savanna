@@ -104,6 +104,14 @@ class LoyaltyService
     {
         if (!$order->user_id) return;
 
+        // Defense-in-depth: the callers (checkout confirm / Stripe webhook) already lock the
+        // order row before calling this, but guard here too in case this is ever invoked
+        // from elsewhere without that lock.
+        $alreadyAwarded = LoyaltyTransaction::where('order_id', $order->id)
+            ->where('type', 'earned')
+            ->exists();
+        if ($alreadyAwarded) return;
+
         $user = User::find($order->user_id);
         if (!$user) return;
 

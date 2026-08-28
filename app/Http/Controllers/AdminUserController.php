@@ -45,7 +45,7 @@ class AdminUserController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->whereNull('deleted_at')],
             'password' => 'required|string|min:8',
             'role_id' => 'required|exists:roles,id',
         ]);
@@ -76,10 +76,19 @@ class AdminUserController extends Controller
     {
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'email' => ['sometimes', 'required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)->whereNull('deleted_at')],
             'password' => 'nullable|string|min:8',
             'role_id' => 'sometimes|required|exists:roles,id',
         ]);
+
+        // Changing which role a user holds is a manage_roles-level action, not merely a
+        // manage_users one — otherwise a role granted manage_users without manage_roles
+        // could assign itself (or anyone) the Administrator role.
+        if (isset($validated['role_id']) && (int) $validated['role_id'] !== (int) $user->role_id) {
+            if (! $request->user()?->hasPermission('manage_roles')) {
+                return response()->json(['message' => 'Unauthorized. Missing permission: manage_roles'], 403);
+            }
+        }
 
         $data = [];
         if (isset($validated['name'])) $data['name'] = $validated['name'];

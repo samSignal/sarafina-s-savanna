@@ -77,6 +77,8 @@ Route::post('stripe/webhook', [StripeWebhookController::class, 'handle'])->middl
 Route::get('admin/customers', [AdminCustomerController::class, 'index'])->middleware(['auth:sanctum', 'permission:view_customers']);
 Route::get('admin/customers/{user}', [AdminCustomerController::class, 'show'])->middleware(['auth:sanctum', 'permission:view_customers']);
 Route::get('admin/orders', [AdminOrderController::class, 'index'])->middleware(['auth:sanctum', 'permission:view_orders']);
+Route::get('admin/orders/export/pdf', [AdminOrderController::class, 'exportPdf'])->middleware(['auth:sanctum', 'permission:view_orders']);
+Route::get('admin/orders/export/excel', [AdminOrderController::class, 'exportExcel'])->middleware(['auth:sanctum', 'permission:view_orders']);
 Route::put('admin/orders/{order}', [AdminOrderController::class, 'update'])->middleware(['auth:sanctum', 'permission:manage_orders']);
 Route::get('admin/analytics', [App\Http\Controllers\AdminAnalyticsController::class, 'index'])->middleware(['auth:sanctum', 'permission:view_dashboard']);
 Route::get('admin/delivery/settings', [AdminDeliveryController::class, 'getSettings'])->middleware(['auth:sanctum', 'permission:manage_delivery']);
