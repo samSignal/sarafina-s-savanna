@@ -2,16 +2,58 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\OrdersExport;
 use App\Models\Order;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminOrderController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = Order::with(['user', 'items'])
-            ->latest();
+        $orders = $this->filteredQuery($request)->limit(200)->get();
+
+        return response()->json($orders->map(fn (Order $order) => $this->serializeOrder($order))->all());
+    }
+
+    public function update(Request $request, Order $order): JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => 'required|string',
+        ]);
+
+        $order->update(['status' => $validated['status']]);
+
+        return response()->json(['message' => 'Order status updated']);
+    }
+
+    public function exportPdf(Request $request): Response
+    {
+        $orders = $this->filteredQuery($request)->limit(1000)->get();
+
+        $pdf = Pdf::loadView('exports.orders-pdf', ['orders' => $orders])->setPaper('a4', 'landscape');
+
+        return $pdf->download('orders-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    public function exportExcel(Request $request): BinaryFileResponse
+    {
+        $orders = $this->filteredQuery($request)->limit(5000)->get();
+
+        return Excel::download(new OrdersExport($orders), 'orders-' . now()->format('Y-m-d') . '.xlsx');
+    }
+
+    /**
+     * @return Builder<Order>
+     */
+    private function filteredQuery(Request $request): Builder
+    {
+        $query = Order::with(['user', 'items'])->latest();
 
         if ($request->filled('q')) {
             $term = $request->string('q')->toString();
@@ -37,67 +79,55 @@ class AdminOrderController extends Controller
             $query->where('delivery_status', $request->string('delivery_status')->toString());
         }
 
-        $orders = $query->limit(200)->get();
-
-        return response()->json(
-            $orders->map(function (Order $order) {
-                $rate = (float) $order->exchange_rate ?: 1.0;
-
-                return [
-                    'id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'status' => $order->status,
-                    'shipping_method' => $order->shipping_method,
-                    'delivery_status' => $order->delivery_status,
-                    'estimated_delivery_date' => $order->estimated_delivery_date,
-                    'payment_status' => $order->payment_status,
-                    'total' => (float) $order->total,
-                    'currency' => $order->currency,
-                    'exchange_rate' => $rate,
-                    'total_gbp' => (float) $order->total_gbp,
-                    'delivery_cost' => (float) $order->delivery_cost,
-                    'points_redeemed' => (int) ($order->points_redeemed ?? 0),
-                    'discount_amount' => (float) ($order->discount_amount ?? 0),
-                    'gift_card_discount' => (float) ($order->gift_card_discount ?? 0),
-                    'created_at' => $order->created_at,
-                    'customer_id' => $order->user?->id,
-                    'customer_name' => $order->user?->name,
-                    'customer_email' => $order->user?->email,
-                    'shipping_address' => [
-                        'line1' => $order->shipping_address_line1,
-                        'line2' => $order->shipping_address_line2,
-                        'city' => $order->shipping_city,
-                        'postcode' => $order->shipping_postcode,
-                        'country' => $order->shipping_country,
-                    ],
-                    'items' => $order->items->map(function ($item) use ($rate) {
-                        $unitPrice = (float) $item->unit_price;
-                        $lineTotal = (float) $item->line_total;
-
-                        return [
-                            'id' => $item->id,
-                            'product_id' => $item->product_id,
-                            'product_name' => $item->product_name,
-                            'quantity' => $item->quantity,
-                            'unit_price' => $unitPrice,
-                            'line_total' => $lineTotal,
-                            'unit_price_gbp' => $unitPrice / $rate,
-                            'line_total_gbp' => $lineTotal / $rate,
-                        ];
-                    }),
-                ];
-            })->all()
-        );
+        return $query;
     }
 
-    public function update(Request $request, Order $order): JsonResponse
+    private function serializeOrder(Order $order): array
     {
-        $validated = $request->validate([
-            'status' => 'required|string',
-        ]);
+        $rate = (float) $order->exchange_rate ?: 1.0;
 
-        $order->update(['status' => $validated['status']]);
+        return [
+            'id' => $order->id,
+            'order_number' => $order->order_number,
+            'status' => $order->status,
+            'shipping_method' => $order->shipping_method,
+            'delivery_status' => $order->delivery_status,
+            'estimated_delivery_date' => $order->estimated_delivery_date,
+            'payment_status' => $order->payment_status,
+            'total' => (float) $order->total,
+            'currency' => $order->currency,
+            'exchange_rate' => $rate,
+            'total_gbp' => (float) $order->total_gbp,
+            'delivery_cost' => (float) $order->delivery_cost,
+            'points_redeemed' => (int) ($order->points_redeemed ?? 0),
+            'discount_amount' => (float) ($order->discount_amount ?? 0),
+            'gift_card_discount' => (float) ($order->gift_card_discount ?? 0),
+            'created_at' => $order->created_at,
+            'customer_id' => $order->user?->id,
+            'customer_name' => $order->user?->name,
+            'customer_email' => $order->user?->email,
+            'shipping_address' => [
+                'line1' => $order->shipping_address_line1,
+                'line2' => $order->shipping_address_line2,
+                'city' => $order->shipping_city,
+                'postcode' => $order->shipping_postcode,
+                'country' => $order->shipping_country,
+            ],
+            'items' => $order->items->map(function ($item) use ($rate) {
+                $unitPrice = (float) $item->unit_price;
+                $lineTotal = (float) $item->line_total;
 
-        return response()->json(['message' => 'Order status updated']);
+                return [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product_name,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $unitPrice,
+                    'line_total' => $lineTotal,
+                    'unit_price_gbp' => $unitPrice / $rate,
+                    'line_total_gbp' => $lineTotal / $rate,
+                ];
+            }),
+        ];
     }
 }

@@ -4,11 +4,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Eye, ChevronDown, ChevronUp, Edit } from "lucide-react";
+import { Search, Eye, ChevronDown, ChevronUp, Edit, FileDown, FileSpreadsheet, FileText } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 interface OrderItem {
@@ -101,6 +102,37 @@ export default function Orders() {
     }
   };
 
+  const handleExport = async (type: "pdf" | "excel") => {
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set("q", search.trim());
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      if (paymentStatusFilter !== "all") params.set("payment_status", paymentStatusFilter);
+      if (deliveryStatusFilter !== "all") params.set("delivery_status", deliveryStatusFilter);
+
+      const response = await fetch(`/api/admin/orders/export/${type}?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        toast.error("Failed to export orders");
+        return;
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `orders-${new Date().toISOString().slice(0, 10)}.${type === "pdf" ? "pdf" : "xlsx"}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error("An error occurred during export");
+    }
+  };
+
   useEffect(() => {
     const loadOrders = async () => {
       setLoading(true);
@@ -162,9 +194,21 @@ export default function Orders() {
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
           <p className="text-muted-foreground">Manage and track customer orders.</p>
         </div>
-        <Button variant="outline">
-          Export Orders
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              <FileDown className="mr-2 h-4 w-4" /> Export Orders
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleExport("pdf")}>
+              <FileText className="mr-2 h-4 w-4" /> Export as PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport("excel")}>
+              <FileSpreadsheet className="mr-2 h-4 w-4" /> Export as Excel
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="flex flex-col gap-4 bg-white p-4 rounded-lg border shadow-sm">
